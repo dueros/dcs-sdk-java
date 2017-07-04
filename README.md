@@ -20,10 +20,10 @@ a.完成注册百度账号、开发者认证和产品创建（选择手机场景
 
 
 b.开发环境
-- Android Studio 2.2+
-- Gradle 2.2+
-- Android SDK 5.0+ (支持http/2)
-- JDK 1.6+
+  - Android Studio 2.2+
+  - Gradle 2.2+
+  - Android SDK 5.0+ (支持http/2)
+  - JDK 1.6+
 
 ## 2-克隆项目
 
@@ -34,17 +34,21 @@ git clone https://github.com/dueros/dcs-sdk-java.git
 ## 3-运行
 
 a.通过Android Studio找到DcsSampleOAuthActivity.java，利用上述client_id进行替换
+
 ![](images/modify-client-id.png)  
 
 b.运行（Android真机）
+
 ![](images/login1.png)
 
 c.百度账号登录
+
 ![](images/login2.png)
 
 ## 4-唤醒
 
 说“小度小度”，成功唤醒后进入“录音中”状态，如下图：
+
 ![](images/wakeup.png)
 
 ## 5-和小度对话
