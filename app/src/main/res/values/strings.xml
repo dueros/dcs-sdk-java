@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">DcsSampleApp</string>
+    <string name="err_net_msg">当前网络连接失败,请稍后重试</string>
+    <string name="voice_err_msg">识别失败，请稍后再试</string>
+    <string name="audio_paused">暂停中&#8230;</string>
+    <string name="audio_playing">播放中&#8230;</string>
+    <string name="audio_default">等待音乐</string>
+    <string name="stop_record">点击说话</string>
+    <string name="start_record">录音中&#8230;</string>
+    <string name="time_record">耗时:click->StopListen:%1$dms</string>
+    <string name="request_error">出错了，请稍后再试</string>
+    <string name="no_log">暂时没有日志</string>
+    <string name="no_directive">对不起，暂时没有收到指令</string>
+    <string name="no_audio">暂时没有歌曲了，请稍后再试</string>
+    <string name="open_file_title">选择浏览工具</string>
+    <string name="previous_audio">上一首</string>
+    <string name="next_audio">下一首</string>
+    <string name="open_log">打开日志</string>
+    <string name="login">登陆</string>
+    <string name="client_id">您应用的client_id</string>
+    <string name="client_id_empty">请输入您申请的client_id</string>
+    <string name="login_succeed">登陆成功</string>
+    <string name="wakeup_succeed">唤醒成功,您问点什么呢?</string>
+    <string name="wakeup_word">您可以说【小度小度】进行唤醒</string>
+</resources>

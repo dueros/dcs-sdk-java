@@ -1,1 +1,60 @@
-# Coming soon...
+﻿# DCS SDK（Java）开发者指南
+
+## DCS协议
+
+DCS协议是DuerOS服务端与设备端之间的通讯协议，是一套把DuerOS的智能语音交互能力向所有设备开放的API，了解详情请看[DCS协议文档](http://developer.dueros.baidu.com/doc/dueros-conversational-service/introduction_markdown)。
+
+## 摘要
+
+DCS SDK提供DCS协议在设备端的实现，旨在降低设备接入DuerOS的开发成本。DCS SDK是完整的Sample App，可以直接在目标设备运行，并且源代码全部开源，开发者可以基于源码进行二次开发。
+
+本文档介绍的DCS SDK（Java）是Java版本的实现，该版本目前支持Android系统。
+
+## 1-前置条件
+
+a.完成注册百度账号、开发者认证和产品创建（选择手机场景和Android平台）后，请保存client_id和client_secret
+
+![](images/client-id-secret.png)
+
+具体参考[控制台接入流程](http://developer.dueros.baidu.com/doc/overall/console-guide_markdown)。
+
+
+b.开发环境
+- Android Studio 2.2+
+- Gradle 2.2+
+- Android SDK 5.0+ (支持http/2)
+- JDK 1.6+
+
+## 2-克隆项目
+
+```shell
+git clone https://github.com/dueros/dcs-sdk-java.git
+```
+
+## 3-运行
+
+a.通过Android Studio找到DcsSampleOAuthActivity.java，利用上述client_id进行替换
+![](images/modify-client-id.png)  
+
+b.运行（Android真机）
+![](images/login1.png)
+
+c.百度账号登录
+![](images/login2.png)
+
+## 4-唤醒
+
+说“小度小度”，成功唤醒后进入“录音中”状态，如下图：
+![](images/wakeup.png)
+
+## 5-和小度对话
+
+a.通过唤醒或者单击“点击说话”进入录音状态， 问“北京天气怎么样”，DuerOS后端将发送stopListen指令，同时返回speak指令，播报北京天气。
+
+b.问“播放刘若英的歌”, 返回play指令播放歌，可以从界面上进行“播放”、“暂停”、“上一首”和“下一首”操作。
+
+## 6 SDK结构
+
+![](images/sdk-architecture.png)
+
+![](images/access-architecture.png)
