@@ -18,8 +18,15 @@ a.完成注册百度账号、开发者认证和产品创建（选择手机场景
 
 具体参考[控制台接入流程](http://developer.dueros.baidu.com/doc/overall/console-guide_markdown)。
 
+b.在百度开发者中心配置OAuth的授权回调页
+  1. 到DuerOS开放平台控制台： http://developer.dueros.baidu.com/openduer/product/getproduct
+  2. 点击所创建产品的“编辑”按钮，按钮在右侧
+  3. 点击OAUTH CONFIG URL，到百度开发者平台控制台
+  4. 在开发者平台控制台，点击左侧“安全设置”
+  5. 在“授权回调页”输入框中输入"bdconnect://cancel,bdconnect://success"（不带双引号）
+  6. 点击页面下方“确定”按钮
 
-b.开发环境
+c.开发环境
   - Android Studio 2.2+
   - Gradle 2.2+
   - Android SDK 5.0+ (支持http/2)
