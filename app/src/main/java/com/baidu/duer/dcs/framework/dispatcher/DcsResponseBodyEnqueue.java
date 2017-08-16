@@ -55,6 +55,10 @@ public class DcsResponseBodyEnqueue {
     }
 
     public synchronized void handleResponseBody(DcsResponseBody responseBody) {
+        if (responseBody.getDirective() == null) {
+            return;
+        }
+        
         incompleteResponseQueue.add(responseBody);
         matchAudioDataWithResponseBody();
     }
