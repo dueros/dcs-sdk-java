@@ -30,6 +30,8 @@ import android.widget.Toast;
 import com.baidu.duer.dcs.R;
 import com.baidu.duer.dcs.androidsystemimpl.PlatformFactoryImpl;
 import com.baidu.duer.dcs.androidsystemimpl.webview.BaseWebView;
+import com.baidu.duer.dcs.devicemodule.screen.ScreenDeviceModule;
+import com.baidu.duer.dcs.devicemodule.screen.message.RenderVoiceInputTextPayload;
 import com.baidu.duer.dcs.devicemodule.voiceinput.VoiceInputDeviceModule;
 import com.baidu.duer.dcs.framework.DcsFramework;
 import com.baidu.duer.dcs.framework.DeviceModuleFactory;
@@ -57,6 +59,7 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
     public static final String TAG = "DcsDemoActivity";
     private Button voiceButton;
     private TextView textViewTimeStopListen;
+    private TextView textViewRenderVoiceInputText;
     private Button pauseOrPlayButton;
     private BaseWebView webView;
     private LinearLayout mTopLinearLayout;
@@ -92,6 +95,7 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
         voiceButton.setOnClickListener(this);
 
         textViewTimeStopListen = (TextView) findViewById(R.id.id_tv_time_0);
+        textViewRenderVoiceInputText = (TextView) findViewById(R.id.id_tv_RenderVoiceInputText);
         mTopLinearLayout = (LinearLayout) findViewById(R.id.topLinearLayout);
 
         webView = new BaseWebView(DcsSampleMainActivity.this.getApplicationContext());
@@ -122,7 +126,6 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
             }
         });
         mTopLinearLayout.addView(webView);
-        webView.loadUrl("about:blank");
 
         Button mPreviousSongBtn = (Button) findViewById(R.id.previousSongBtn);
         pauseOrPlayButton = (Button) findViewById(R.id.pauseOrPlayBtn);
@@ -214,7 +217,14 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
         deviceModuleFactory.createSpeakControllerDeviceModule();
         deviceModuleFactory.createPlaybackControllerDeviceModule();
         deviceModuleFactory.createScreenDeviceModule();
+        deviceModuleFactory.getScreenDeviceModule()
+                .addRenderVoiceInputTextListener(new ScreenDeviceModule.IRenderVoiceInputTextListener() {
+                    @Override
+                    public void onRenderVoiceInputText(RenderVoiceInputTextPayload payload) {
+                        textViewRenderVoiceInputText.setText(payload.text);
+                    }
 
+                });
         // init唤醒
         wakeUp = new WakeUp(platformFactory.getWakeUp(),
                 platformFactory.getAudioRecord());
@@ -261,6 +271,7 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
         deviceModuleFactory.getSystemProvider().userActivity();
         voiceButton.setText(getResources().getString(R.string.start_record));
         textViewTimeStopListen.setText("");
+        textViewRenderVoiceInputText.setText("");
     }
 
     @Override

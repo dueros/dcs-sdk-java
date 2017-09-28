@@ -21,6 +21,7 @@ import android.os.Looper;
 import com.baidu.duer.dcs.androidsystemimpl.alert.AlertsFileDataStoreImpl;
 import com.baidu.duer.dcs.androidsystemimpl.audioinput.AudioVoiceInputImpl;
 import com.baidu.duer.dcs.androidsystemimpl.playbackcontroller.IPlaybackControllerImpl;
+import com.baidu.duer.dcs.androidsystemimpl.player.AudioTrackPlayerImpl;
 import com.baidu.duer.dcs.androidsystemimpl.player.MediaPlayerImpl;
 import com.baidu.duer.dcs.androidsystemimpl.wakeup.WakeUpImpl;
 import com.baidu.duer.dcs.systeminterface.IAlertsDataStore;
@@ -90,6 +91,11 @@ public class PlatformFactoryImpl implements IPlatformFactory {
     @Override
     public IMediaPlayer createMediaPlayer() {
         return new MediaPlayerImpl();
+    }
+
+    @Override
+    public IMediaPlayer createAudioTrackPlayer() {
+        return new AudioTrackPlayerImpl();
     }
 
     public IAlertsDataStore createAlertsDataStore() {

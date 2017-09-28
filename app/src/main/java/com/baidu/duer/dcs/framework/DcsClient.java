@@ -15,6 +15,12 @@
  */
 package com.baidu.duer.dcs.framework;
 
+import android.util.Log;
+
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.Response;
+import com.baidu.duer.dcs.framework.decoder.IDecoder;
+import com.baidu.duer.dcs.framework.decoder.JLayerDecoderImpl;
 import com.baidu.duer.dcs.framework.dispatcher.AudioData;
 import com.baidu.duer.dcs.framework.dispatcher.MultipartParser;
 import com.baidu.duer.dcs.framework.heartbeat.HeartBeat;
@@ -27,10 +33,6 @@ import com.baidu.duer.dcs.http.OkHttpRequestImpl;
 import com.baidu.duer.dcs.http.callback.ResponseCallback;
 import com.baidu.duer.dcs.util.LogUtil;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.Response;
 
 /**
  * 和服务器端保持长连接、发送events和接收directives和维持心跳
@@ -39,10 +41,15 @@ import okhttp3.Response;
  */
 public class DcsClient {
     public static final String TAG = DcsClient.class.getSimpleName();
+    public static final long HTTP_DIRECTIVES_TIME = 60 * 60 * 1000;
     private final DcsResponseDispatcher dcsResponseDispatcher;
     private final HttpRequestInterface httpRequestImp;
     private final HeartBeat heartBeat;
     private IDcsClientListener dcsClientListener;
+    private IDecoder decoder;
+    private final MultipartParser directiveParser;
+    private final MultipartParser eventParser;
+    private boolean isReleased;
 
     public DcsClient(DcsResponseDispatcher dcsResponseDispatcher, IDcsClientListener dcsClientListener) {
         this.dcsResponseDispatcher = dcsResponseDispatcher;
@@ -55,9 +62,23 @@ public class DcsClient {
                 startConnect();
             }
         });
+
+        decoder = new JLayerDecoderImpl();
+
+        MultipartParser.IMultipartParserListener parserListener = new ClientParserListener();
+
+        directiveParser = new MultipartParser(decoder, new ClientParserListener() {
+            @Override
+            public void onClose() {
+                startConnect();
+            }
+        });
+        eventParser = new MultipartParser(decoder, parserListener);
     }
 
     public void release() {
+        isReleased = true;
+        decoder.release();
         heartBeat.release();
         httpRequestImp.cancelRequest(HttpConfig.HTTP_DIRECTIVES_TAG);
         httpRequestImp.cancelRequest(HttpConfig.HTTP_EVENT_TAG);
@@ -66,23 +87,26 @@ public class DcsClient {
     /**
      * 建立连接
      */
-    public void startConnect() {
-        httpRequestImp.cancelRequest(HttpConfig.HTTP_DIRECTIVES_TAG);
-        getDirectives(new IResponseListener() {
-            @Override
-            public void onSucceed(int statusCode) {
-                LogUtil.d(TAG, "getDirectives onSucceed");
-                fireOnConnected();
-                heartBeat.startNormalPing();
-            }
+    private final IResponseListener connectListener = new IResponseListener() {
+        @Override
+        public void onSucceed(int statusCode) {
+            LogUtil.d(TAG, "getDirectives onSucceed");
+            fireOnConnected();
+            heartBeat.startNormalPing();
+        }
 
-            @Override
-            public void onFailed(String errorMessage) {
-                LogUtil.d(TAG, "getDirectives onFailed");
-                fireOnUnconnected();
-                heartBeat.startExceptionalPing();
-            }
-        });
+        @Override
+        public void onFailed(String errorMessage) {
+            LogUtil.d(TAG, "getDirectives onFailed");
+            fireOnUnconnected();
+            startConnect();
+        }
+    };
+
+    public void startConnect() {
+        if (!isReleased) {
+            getDirectives(connectListener);
+        }
     }
 
     /**
@@ -94,8 +118,11 @@ public class DcsClient {
      */
     public void sendRequest(DcsRequestBody requestBody,
                             DcsStreamRequestBody streamRequestBody, final IResponseListener listener) {
+        Log.e("logId", "logId send  stream start");
+        decoder.interruptDecode();
+        // httpRequestImp.cancelRequest(HttpConfig.HTTP_VOICE_TAG);
         httpRequestImp.doPostEventMultipartAsync(requestBody,
-                streamRequestBody, getResponseCallback(dcsResponseDispatcher, new IResponseListener() {
+                streamRequestBody, getResponseCallback(eventParser, new IResponseListener() {
                     @Override
                     public void onSucceed(int statusCode) {
                         if (listener != null) {
@@ -122,13 +149,12 @@ public class DcsClient {
      */
     public void sendRequest(DcsRequestBody requestBody, IResponseListener listener) {
         httpRequestImp.doPostEventStringAsync(requestBody,
-                getResponseCallback(dcsResponseDispatcher, listener));
+                getResponseCallback(eventParser, listener));
     }
 
     private void getDirectives(IResponseListener listener) {
         httpRequestImp.cancelRequest(HttpConfig.HTTP_DIRECTIVES_TAG);
-        httpRequestImp.doGetDirectivesAsync(null,
-                getResponseCallback(dcsResponseDispatcher, listener));
+        httpRequestImp.doGetDirectivesAsync(getResponseCallback(directiveParser, listener));
     }
 
     private void fireOnConnected() {
@@ -143,15 +169,20 @@ public class DcsClient {
         }
     }
 
-    private ResponseCallback getResponseCallback(final DcsResponseDispatcher dcsResponseDispatcher,
+
+    private ResponseCallback getResponseCallback(final MultipartParser multipartParser,
                                                  final IResponseListener responseListener) {
-        ResponseCallback responseCallback = new ResponseCallback() {
+        return new ResponseCallback() {
             @Override
             public void onError(Call call, Exception e, int id) {
                 LogUtil.d(TAG, "onError,", e);
-                if (responseListener != null) {
-                    responseListener.onFailed(e.getMessage());
+                if (call.request().tag().equals(HttpConfig.DIRECTIVES)
+                        || call.request().tag().equals(HttpConfig.HTTP_VOICE_TAG)) {
+
+                    fireOnFailed(e.getMessage());
+
                 }
+
             }
 
             @Override
@@ -168,35 +199,20 @@ public class DcsClient {
             public Response parseNetworkResponse(Response response, int id) throws Exception {
                 int statusCode = response.code();
                 if (statusCode == 200) {
-                    MultipartParser multipartParser = new MultipartParser(
-                            new MultipartParser.IMultipartParserListener() {
-                                @Override
-                                public void onResponseBody(DcsResponseBody responseBody) {
-                                    dcsResponseDispatcher.onResponseBody(responseBody);
-                                }
-
-                                @Override
-                                public void onAudioData(AudioData audioData) {
-                                    dcsResponseDispatcher.onAudioData(audioData);
-                                }
-
-                                @Override
-                                public void onParseFailed(String unParseMessage) {
-                                    dcsResponseDispatcher.onParseFailed(unParseMessage);
-                                }
-                            });
-
-                    try {
-                        multipartParser.parseResponse(response);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    Log.d(TAG, "onResponse OK ," + response.request().tag());
+                    multipartParser.parseResponse(response);
                 }
                 return response;
             }
-        };
 
-        return responseCallback;
+            void fireOnFailed(String errorMessage) {
+                if (responseListener != null) {
+                    responseListener.onFailed(errorMessage);
+                }
+            }
+
+
+        };
     }
 
     public interface IDcsClientListener {
@@ -204,4 +220,32 @@ public class DcsClient {
 
         void onUnconnected();
     }
+
+    private class ClientParserListener implements MultipartParser.IMultipartParserListener {
+        @Override
+        public void onResponseBody(DcsResponseBody responseBody) {
+            DcsClient.this.dcsResponseDispatcher.onResponseBody(responseBody);
+        }
+
+        @Override
+        public void onAudioData(AudioData audioData) {
+            DcsClient.this.dcsResponseDispatcher.onAudioData(audioData);
+        }
+
+        @Override
+        public void onParseFailed(String unParseMessage) {
+            DcsClient.this.dcsResponseDispatcher.onParseFailed(unParseMessage);
+        }
+
+        @Override
+        public void onHeartBeat() {
+            heartBeat.receiveHeartbeat();
+        }
+
+        @Override
+        public void onClose() {
+
+        }
+    }
+
 }

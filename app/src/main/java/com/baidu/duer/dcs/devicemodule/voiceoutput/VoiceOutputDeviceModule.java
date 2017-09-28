@@ -30,8 +30,6 @@ import com.baidu.duer.dcs.framework.message.MessageIdHeader;
 import com.baidu.duer.dcs.systeminterface.IMediaPlayer;
 import com.baidu.duer.dcs.util.LogUtil;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -107,8 +105,7 @@ public class VoiceOutputDeviceModule extends BaseDeviceModule {
         final SpeakPayload speak = speakQueue.getFirst();
         if (null != speak) {
             lastSpeakToken = speak.token;
-            InputStream inputStream = new ByteArrayInputStream(speak.attachedContent);
-            mediaPlayer.play(new IMediaPlayer.MediaResource(inputStream));
+            mediaPlayer.play(new IMediaPlayer.MediaResource(speak.dcsStream));
         }
     }
 

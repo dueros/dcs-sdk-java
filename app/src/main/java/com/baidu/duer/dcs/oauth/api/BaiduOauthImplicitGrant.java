@@ -45,7 +45,10 @@ public class BaiduOauthImplicitGrant implements Parcelable {
     // 需要注意
     public static final String SUCCESS_URI = "bdconnect://success";
     private static final String OAUTHORIZE_URL = "https://openapi.baidu.com/oauth/2.0/authorize";
-    private static final String DISPLAY_STRING = "mobile";
+    // 账号登录
+    // private static final String DISPLAY_STRING = "mobile";
+    // 扫码登录
+    private static final String DISPLAY_STRING = "popup";
     private static final String[] DEFAULT_PERMISSIONS = {"basic"};
     private static final String KEY_CLIENT_ID = "clientId";
     // 应用注册的api key信息
@@ -195,6 +198,7 @@ public class BaiduOauthImplicitGrant implements Parcelable {
             String scope = TextUtils.join(" ", permissions);
             params.putString("scope", scope);
         }
+        params.putString("qrcode", "1");
         String url = OAUTHORIZE_URL + "?" + CommonUtil.encodeUrl(params);
         LogUtil.d(LOG_TAG, "url:" + url);
         if (activity.checkCallingOrSelfPermission(Manifest.permission.INTERNET)

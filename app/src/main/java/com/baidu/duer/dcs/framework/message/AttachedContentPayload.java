@@ -15,6 +15,8 @@
  */
 package com.baidu.duer.dcs.framework.message;
 
+import com.baidu.duer.dcs.framework.DcsStream;
+
 /**
  * 语音输出speak指令附加内容
  * <p>
@@ -24,6 +26,6 @@ public interface AttachedContentPayload {
     boolean requiresAttachedContent();
     boolean hasAttachedContent();
     String getAttachedContentId();
-    byte[] getAttachedContent();
-    void setAttachedContent(String contentId, byte[] attachmentContent);
+    DcsStream getAttachedContent();
+    void setAttachedContent(String contentId, DcsStream dcsStream);
 }

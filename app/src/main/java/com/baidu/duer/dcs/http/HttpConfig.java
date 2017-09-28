@@ -15,10 +15,13 @@
  */
 package com.baidu.duer.dcs.http;
 
+import android.util.Log;
+
 import com.baidu.duer.dcs.util.CommonUtil;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * HttpConfig
@@ -39,6 +42,8 @@ public class HttpConfig {
     public static final String PING = "/dcs/v1/ping";
     // 请求event事件TAG
     public static final String HTTP_EVENT_TAG = "event";
+    // 请求voice
+    public static final String HTTP_VOICE_TAG = "voice";
     // 请求directives事件TAG
     public static final String HTTP_DIRECTIVES_TAG = "directives";
     // 请求ping的TAG
@@ -75,6 +80,7 @@ public class HttpConfig {
         public static final String BEARER = "Bearer ";
         public static final String DEBUG = "debug";
         public static final String DEBUG_PARAM = "0";
+        public static final String SAIYA_LOGID = "saiyalogid";
     }
 
     public static class ContentTypes {
@@ -115,6 +121,10 @@ public class HttpConfig {
                 CommonUtil.getDeviceUniqueID());
         headers.put(HttpConfig.HttpHeaders.DEBUG,
                 HttpConfig.HttpHeaders.DEBUG_PARAM);
+        // headers.put(HttpHeaders.DEBUG_BOSS, "nj03-rp-m22nlp156.nj03.baidu.com:8486");
+        String logId = UUID.randomUUID().toString();
+        Log.d("time", "logid："+logId);
+        headers.put(HttpHeaders.SAIYA_LOGID, logId);
         return headers;
     }
 }

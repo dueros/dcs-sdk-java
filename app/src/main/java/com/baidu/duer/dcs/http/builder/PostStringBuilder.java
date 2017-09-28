@@ -15,10 +15,10 @@
  */
 package com.baidu.duer.dcs.http.builder;
 
+import com.baidu.dcs.okhttp3.MediaType;
 import com.baidu.duer.dcs.http.request.PostStringRequest;
 import com.baidu.duer.dcs.http.request.RequestCall;
 
-import okhttp3.MediaType;
 
 /**
  * post请求的构建类

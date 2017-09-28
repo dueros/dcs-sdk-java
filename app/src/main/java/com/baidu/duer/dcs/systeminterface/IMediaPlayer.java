@@ -15,6 +15,8 @@
  */
 package com.baidu.duer.dcs.systeminterface;
 
+import com.baidu.duer.dcs.framework.DcsStream;
+
 import java.io.InputStream;
 
 /**
@@ -297,6 +299,7 @@ public interface IMediaPlayer {
         public InputStream stream;  // 流类型
         public String url;          // url类型
         public boolean isStream;    // 是否值流类型
+        public DcsStream dcsStream;
 
         public MediaResource(InputStream stream) {
             this.stream = stream;
@@ -306,6 +309,10 @@ public interface IMediaPlayer {
         public MediaResource(String url) {
             this.url = url;
             this.isStream = false;
+        }
+
+        public MediaResource(DcsStream dcsStream) {
+            this.dcsStream = dcsStream;
         }
 
         @Override

@@ -15,7 +15,8 @@
  */
 package com.baidu.duer.dcs.http.callback;
 
-import okhttp3.Response;
+
+import com.baidu.dcs.okhttp3.Response;
 
 /**
  * String类型回调

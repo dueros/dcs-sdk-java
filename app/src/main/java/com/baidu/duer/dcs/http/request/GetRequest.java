@@ -15,10 +15,10 @@
  */
 package com.baidu.duer.dcs.http.request;
 
-import java.util.Map;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.RequestBody;
 
-import okhttp3.Request;
-import okhttp3.RequestBody;
+import java.util.Map;
 
 /**
  * 普通GetRequest

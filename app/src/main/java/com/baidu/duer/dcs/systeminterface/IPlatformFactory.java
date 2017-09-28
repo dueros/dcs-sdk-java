@@ -27,6 +27,7 @@ public interface IPlatformFactory {
     IWakeUp getWakeUp();
     IAudioInput getVoiceInput();
     IMediaPlayer createMediaPlayer();
+    IMediaPlayer createAudioTrackPlayer();
     IAlertsDataStore createAlertsDataStore();
     IWebView getWebView();
     void setWebView(IWebView webView);

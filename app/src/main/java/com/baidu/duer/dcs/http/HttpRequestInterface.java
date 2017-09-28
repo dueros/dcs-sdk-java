@@ -47,10 +47,9 @@ public interface HttpRequestInterface {
     /**
      * 异步Get Directives请求
      *
-     * @param requestBody 请求信息体
      * @param dcsCallback 结果回调接口
      */
-    void doGetDirectivesAsync(DcsRequestBody requestBody, DcsCallback dcsCallback);
+    void doGetDirectivesAsync(DcsCallback dcsCallback);
 
     /**
      * 异步Get Ping请求

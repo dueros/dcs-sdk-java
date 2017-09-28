@@ -64,6 +64,8 @@ public class AudioVoiceInputThread extends Thread {
         isStart = false;
     }
 
+    private boolean isfirst = true;
+
     @Override
     public void run() {
         super.run();
@@ -71,6 +73,9 @@ public class AudioVoiceInputThread extends Thread {
             try {
                 byte[] recordAudioData = linkedBlockingDeque.pollFirst();
                 if (null != recordAudioData) {
+                    if (isfirst) {
+                        isfirst = false;
+                    }
                     bufferedSink.write(recordAudioData);
                 }
             } catch (IOException e) {

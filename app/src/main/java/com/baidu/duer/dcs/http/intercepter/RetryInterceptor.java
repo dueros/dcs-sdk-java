@@ -15,11 +15,12 @@
  */
 package com.baidu.duer.dcs.http.intercepter;
 
+import com.baidu.dcs.okhttp3.Interceptor;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.Response;
+
 import java.io.IOException;
 
-import okhttp3.Interceptor;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * 重试拦截器

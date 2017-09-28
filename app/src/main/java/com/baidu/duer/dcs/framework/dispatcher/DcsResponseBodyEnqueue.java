@@ -15,9 +15,9 @@
  */
 package com.baidu.duer.dcs.framework.dispatcher;
 
+import com.baidu.duer.dcs.framework.DialogRequestIdHandler;
 import com.baidu.duer.dcs.framework.message.AttachedContentPayload;
 import com.baidu.duer.dcs.framework.message.DcsResponseBody;
-import com.baidu.duer.dcs.framework.DialogRequestIdHandler;
 import com.baidu.duer.dcs.framework.message.DialogRequestIdHeader;
 import com.baidu.duer.dcs.framework.message.Directive;
 import com.baidu.duer.dcs.framework.message.Header;
@@ -55,10 +55,6 @@ public class DcsResponseBodyEnqueue {
     }
 
     public synchronized void handleResponseBody(DcsResponseBody responseBody) {
-        if (responseBody.getDirective() == null) {
-            return;
-        }
-        
         incompleteResponseQueue.add(responseBody);
         matchAudioDataWithResponseBody();
     }
@@ -81,7 +77,7 @@ public class DcsResponseBodyEnqueue {
                 String contentId = attachedContentPayload.getAttachedContentId();
                 AudioData audioData = audioDataMap.remove(contentId);
                 if (audioData != null) {
-                    attachedContentPayload.setAttachedContent(contentId, audioData.partBytes);
+                    attachedContentPayload.setAttachedContent(contentId, audioData.dcsStream);
                 }
             }
         }
@@ -117,10 +113,8 @@ public class DcsResponseBodyEnqueue {
         Header header = responseBody.getDirective().header;
         DialogRequestIdHeader dialogRequestIdHeader = (DialogRequestIdHeader) header;
         if (dialogRequestIdHeader.getDialogRequestId() == null) {
-            LogUtil.d(TAG, "DcsResponseBodyEnqueue-DialogRequestId  is null ,add to independentQueue");
             independentQueue.add(responseBody);
         } else if (dialogRequestIdHandler.isActiveDialogRequestId(dialogRequestIdHeader.getDialogRequestId())) {
-            LogUtil.d(TAG, "DcsResponseBodyEnqueue-DialogRequestId  not  null,add to dependentQueue");
             dependentQueue.add(responseBody);
         }
     }

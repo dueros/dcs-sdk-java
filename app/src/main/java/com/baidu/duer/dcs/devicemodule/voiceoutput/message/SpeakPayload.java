@@ -17,6 +17,7 @@ package com.baidu.duer.dcs.devicemodule.voiceoutput.message;
 
 import com.baidu.duer.dcs.framework.message.AttachedContentPayload;
 import com.baidu.duer.dcs.framework.message.Payload;
+import com.baidu.duer.dcs.framework.DcsStream;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 
@@ -31,7 +32,7 @@ public class SpeakPayload extends Payload implements AttachedContentPayload {
     public String token;
 
     @JsonIgnore
-    public byte[] attachedContent;
+    public DcsStream dcsStream;
 
     // start with cid:
     public void setUrl(String url) {
@@ -45,7 +46,7 @@ public class SpeakPayload extends Payload implements AttachedContentPayload {
 
     @Override
     public boolean hasAttachedContent() {
-        return attachedContent != null;
+        return dcsStream != null;
     }
 
     @Override
@@ -54,14 +55,14 @@ public class SpeakPayload extends Payload implements AttachedContentPayload {
     }
 
     @Override
-    public byte[] getAttachedContent() {
-        return attachedContent;
+    public DcsStream getAttachedContent() {
+        return dcsStream;
     }
 
     @Override
-    public void setAttachedContent(String cid, byte[] data) {
+    public void setAttachedContent(String cid, DcsStream dcsStream) {
         if (getAttachedContentId().equals(cid)) {
-            this.attachedContent = data;
+            this.dcsStream = dcsStream;
         } else {
             throw new IllegalArgumentException(
                     "Tried to add the wrong audio content to a Speak directive. This cid: "
