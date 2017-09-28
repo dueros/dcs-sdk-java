@@ -62,6 +62,9 @@ public class AudioVoiceInputImpl implements IAudioInput {
     @Override
     public void stopRecord() {
         audioVoiceInputThread.stopWriteStream();
+        if (audioInputListener != null) {
+            audioInputListener.onStopRecord();
+        }
     }
 
     @Override

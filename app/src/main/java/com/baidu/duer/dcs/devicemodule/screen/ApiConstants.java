@@ -34,5 +34,18 @@ public class ApiConstants {
         public static final class HtmlView {
             public static final String NAME = HtmlView.class.getSimpleName();
         }
+        // 设备端在进行ListenStarted事件请求时，
+        // 如果服务端识别到用户说话的内容，则会把识别到内容下发RenderVoiceInputText指令到设备端
+        public static final class RenderVoiceInputText {
+            public static final String NAME = RenderVoiceInputText.class.getSimpleName();
+        }
+
+        public static final class RenderCard {
+            public static final String NAME = RenderCard.class.getSimpleName();
+        }
+
+        public static final class RenderHint {
+            public static final String NAME = RenderHint.class.getSimpleName();
+        }
     }
 }

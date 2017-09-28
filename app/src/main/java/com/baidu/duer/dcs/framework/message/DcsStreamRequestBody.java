@@ -15,12 +15,12 @@
  */
 package com.baidu.duer.dcs.framework.message;
 
+import com.baidu.dcs.okhttp3.MediaType;
+import com.baidu.dcs.okhttp3.RequestBody;
 import com.baidu.duer.dcs.http.OkHttpMediaType;
 
 import java.io.IOException;
 
-import okhttp3.MediaType;
-import okhttp3.RequestBody;
 import okio.BufferedSink;
 import okio.Okio;
 import okio.Pipe;

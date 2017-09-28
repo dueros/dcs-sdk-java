@@ -31,9 +31,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * dcs业务处理框架，用于分发指令(directives)、发送事件(events)和创建deviceModule等
+ * dcs业务框架，用于发送事件、处理指令、长连接维护和多channel播放优先级策略等
  * <p>
- * Created by shenguanghao、wuruisheng on 2017/5/31.
+ * DeviceModule层提供通过工厂来创建设备支持端能力如voiceInput、voiceOutput、speakerController、audioPlayer、playController、alerts和screen等
+ * <p>
+ * DcsResponseDispatcher用于分发指令到对应的deviceModule进行处理
+ * <p>
+ * MultiChannelMediaPlayer基于活跃channel策略用于语音输入打断，播放遵循优先级如dialog(voiceOutput) > alerts > mediaPlayer
+ * <p>
+ * 网络层DcsClient负责发送请求、心跳和长连接
+ * <p>
+ * Created by shenguanghao, wuruisheng on 2017/5/31.
  */
 public class DcsFramework {
     private static final String TAG = DcsFramework.class.getSimpleName();

@@ -63,7 +63,7 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.PLAYING;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackResumed.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
@@ -71,7 +71,7 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.FINISHED;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackFinished.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
@@ -79,13 +79,13 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.PLAYING;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackStarted.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
     public void playbackFailed(IMediaPlayer.ErrorType errorType) {
         currentState = AudioPlayerState.STOPPED;
-        long offset = audioPlayStateReportListener.getCurrentOffsetInMilliseconds();
+        long offset = audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds();
         PlaybackStatePayload playbackStatePayload =
                 new PlaybackStatePayload(audioPlayStateReportListener.getCurrentStreamToken(),
                         offset, currentState.toString());
@@ -103,7 +103,7 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.PAUSED;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackPaused.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
@@ -111,7 +111,7 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.FINISHED;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackNearlyFinished.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
@@ -137,7 +137,7 @@ public class AudioPlayStateReport {
         currentState = AudioPlayerState.STOPPED;
         Event event = createAudioPlayerEvent(ApiConstants.Events.PlaybackStopped.NAME,
                 audioPlayStateReportListener.getCurrentStreamToken(),
-                audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
         messageSender.sendEvent(event);
     }
 
@@ -149,7 +149,7 @@ public class AudioPlayStateReport {
             currentState = AudioPlayerState.STOPPED;
             Event eventStopped = createAudioPlayerEvent(ApiConstants.Events.PlaybackStopped.NAME,
                     audioPlayStateReportListener.getCurrentStreamToken(),
-                    audioPlayStateReportListener.getCurrentOffsetInMilliseconds());
+                    audioPlayStateReportListener.getMediaPlayerCurrentOffsetInMilliseconds());
             messageSender.sendEvent(eventStopped);
         }
     }
@@ -201,6 +201,8 @@ public class AudioPlayStateReport {
         String getCurrentStreamToken();
 
         long getCurrentOffsetInMilliseconds();
+
+        long getMediaPlayerCurrentOffsetInMilliseconds();
 
         long getStutterDurationInMilliseconds();
     }

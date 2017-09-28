@@ -15,6 +15,10 @@
  */
 package com.baidu.duer.dcs.http;
 
+import android.util.Log;
+
+import com.baidu.dcs.okhttp3.RequestBody;
+import com.baidu.duer.dcs.framework.DcsClient;
 import com.baidu.duer.dcs.framework.message.DcsRequestBody;
 import com.baidu.duer.dcs.framework.message.DcsStreamRequestBody;
 import com.baidu.duer.dcs.http.callback.DcsCallback;
@@ -24,7 +28,6 @@ import com.baidu.duer.dcs.util.ObjectMapperUtil;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import okhttp3.RequestBody;
 
 /**
  * 请求实现
@@ -42,7 +45,6 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
     @Override
     public void doPostEventStringAsync(DcsRequestBody requestBody, DcsCallback dcsCallback) {
         String bodyJson = ObjectMapperUtil.instance().objectToJson(requestBody);
-        LogUtil.d(TAG, "doPostEventStringAsync-bodyJson:" + bodyJson);
         Map<String, RequestBody> multiParts = new LinkedHashMap<>();
         multiParts.put(HttpConfig.Parameters.DATA_METADATA,
                 RequestBody.create(OkHttpMediaType.MEDIA_JSON_TYPE, bodyJson));
@@ -60,7 +62,7 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
                                           DcsStreamRequestBody streamRequestBody,
                                           DcsCallback dcsCallback) {
         String bodyJson = ObjectMapperUtil.instance().objectToJson(requestBody);
-        LogUtil.d(TAG, "doPostEventMultipartAsync-bodyJson:" + bodyJson);
+        Log.d("time", "开始发语音");
         Map<String, RequestBody> multiParts = new LinkedHashMap<>();
         multiParts.put(HttpConfig.Parameters.DATA_METADATA,
                 RequestBody.create(OkHttpMediaType.MEDIA_JSON_TYPE, bodyJson));
@@ -69,23 +71,21 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
                 .url(HttpConfig.getEventsUrl())
                 .headers(HttpConfig.getDCSHeaders())
                 .multiParts(multiParts)
-                .tag(HttpConfig.HTTP_EVENT_TAG)
+                .tag(HttpConfig.HTTP_VOICE_TAG)
                 .build()
                 .execute(dcsCallback);
     }
 
     @Override
-    public void doGetDirectivesAsync(DcsRequestBody requestBody, DcsCallback dcsCallback) {
+    public void doGetDirectivesAsync( DcsCallback dcsCallback) {
         LogUtil.d(TAG, "doGetDirectivesAsync");
-        final long time = 60 * 60 * 1000L;
         DcsHttpManager.get()
                 .url(HttpConfig.getDirectivesUrl())
                 .headers(HttpConfig.getDCSHeaders())
                 .tag(HttpConfig.HTTP_DIRECTIVES_TAG)
                 .build()
-                .connTimeOut(time)
-                .readTimeOut(time)
-                .writeTimeOut(time)
+                .connTimeOut(DcsClient.HTTP_DIRECTIVES_TIME)
+                .readTimeOut(DcsClient.HTTP_DIRECTIVES_TIME)
                 .execute(dcsCallback);
     }
 

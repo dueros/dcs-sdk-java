@@ -15,16 +15,20 @@
  */
 package com.baidu.duer.dcs.framework.heartbeat;
 
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.Response;
 import com.baidu.duer.dcs.http.HttpConfig;
 import com.baidu.duer.dcs.http.HttpRequestInterface;
 import com.baidu.duer.dcs.http.callback.ResponseCallback;
 import com.baidu.duer.dcs.util.LogUtil;
 
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import okhttp3.Call;
-import okhttp3.Response;
+import bolts.Continuation;
+import bolts.Task;
+import bolts.TaskCompletionSource;
 
 /**
  * 用于检测Directives 是否正常
@@ -35,15 +39,20 @@ public class HeartBeat {
     private static final String TAG = HeartBeat.class.getSimpleName();
     // 设置ping成功后的(ping成功即代表directive请求成功了)请求的时间间隔
     // 修改成270s原因：国内网关保持一个连接时间一般都是300s
-    private static final long PING_TIME_SUCCEED = 30 * 1000;
+    private static final long PING_TIME_SUCCEED = 270 * 1000;
+
     // 设置ping失败后的(ping失败即代表directive请求失败了)请求的时间间隔
     private static final long PING_TIME_FAILED = 5 * 1000;
     private final HttpRequestInterface httpRequest;
     private Timer timer;
     private PingTask pingTask;
+    private HeartBeatTimeoutTask heartBeatTimeoutTask;
     private IHeartbeatListener listener;
     // 连接状态
     private ConnectState connectState;
+
+    // 心跳task
+    private TaskCompletionSource<Boolean> heartBeatTcs;
 
     private enum ConnectState {
         CONNECTED,
@@ -53,6 +62,24 @@ public class HeartBeat {
     public HeartBeat(HttpRequestInterface httpRequest) {
         this.httpRequest = httpRequest;
         timer = new Timer();
+    }
+
+    /**
+     * 停止ping探测，释放资源
+     */
+    public void release() {
+        if (heartBeatTcs != null) {
+            heartBeatTcs.trySetCancelled();
+        }
+        httpRequest.cancelRequest(HttpConfig.HTTP_PING_TAG);
+
+        if (pingTask != null) {
+            pingTask.cancel();
+        }
+
+        if (heartBeatTimeoutTask != null) {
+            heartBeatTimeoutTask.cancel();
+        }
     }
 
     /**
@@ -89,35 +116,82 @@ public class HeartBeat {
         if (pingTask != null) {
             pingTask.cancel();
         }
+
         pingTask = new PingTask();
         if (timer != null) {
             timer.schedule(pingTask, delay, timeInterval);
         }
     }
 
-    /**
-     * 停止ping探测，释放资源
-     */
-    public void release() {
-        if (pingTask != null) {
-            pingTask.cancel();
-            pingTask = null;
-        }
+    private void startPing() {
+        final ArrayList<Task<Boolean>> tasks = new ArrayList<Task<Boolean>>();
+//        tasks.add(createHeartBeatTask());
+        tasks.add(createPingTask());
+        Task.whenAll(tasks).continueWithTask(new Continuation<Void, Task<Void>>() {
+            public Task<Void> then(Task<Void> task) throws Exception {
+                if (task.isFaulted()) {
+                    connectState = ConnectState.UNCONNECTED;
+                    fireOnConnect();
+                }
 
-        timer.cancel();
-        timer = null;
-        httpRequest.cancelRequest(HttpConfig.HTTP_PING_TAG);
+                return task;
+            }
+        }).onSuccess(new Continuation<Void, Void>() {
+            public Void then(Task<Void> task) throws Exception {
+                if (connectState == ConnectState.UNCONNECTED) {
+                    fireOnConnect();
+                }
+                return null;
+            }
+        });
     }
 
-    private void ping() {
+    private void startHeartBeatTimeout() {
+        if (heartBeatTimeoutTask != null) {
+            heartBeatTimeoutTask.cancel();
+        }
+
+        heartBeatTimeoutTask = new HeartBeatTimeoutTask();
+        timer.schedule(heartBeatTimeoutTask, 5000L);
+    }
+
+    public void receiveHeartbeat() {
+        if (heartBeatTcs != null) {
+            heartBeatTcs.trySetResult(Boolean.TRUE);
+        }
+    }
+
+    private Task<Boolean> createHeartBeatTask() {
+        startHeartBeatTimeout();
+        if (heartBeatTcs != null) {
+            heartBeatTcs.trySetCancelled();
+        }
+        heartBeatTcs = new TaskCompletionSource<>();
+        Task<Boolean> heartBeatTask = heartBeatTcs.getTask();
+
+        return heartBeatTask;
+    }
+
+    private void cancelHeartbeatTimeoutTask() {
+        if (heartBeatTcs != null) {
+            heartBeatTcs.trySetError(new Exception());
+        }
+
+        if (heartBeatTimeoutTask != null) {
+            heartBeatTimeoutTask.cancel();
+            heartBeatTimeoutTask = null;
+        }
+    }
+
+    private Task<Boolean> createPingTask() {
+        final TaskCompletionSource<Boolean> tcs = new TaskCompletionSource<>();
         httpRequest.cancelRequest(HttpConfig.HTTP_PING_TAG);
         httpRequest.doGetPingAsync(null, new ResponseCallback() {
             @Override
             public void onError(Call call, Exception e, int id) {
                 super.onError(call, e, id);
                 LogUtil.d(TAG, "ping onError");
-                connectState = ConnectState.UNCONNECTED;
-                fireOnConnect();
+                tcs.trySetError(new Exception());
             }
 
             @Override
@@ -125,15 +199,14 @@ public class HeartBeat {
                 super.onResponse(response, id);
                 LogUtil.d(TAG, "ping onResponse, code :" + response.code());
                 if (response.code() == 200 || response.code() == 204) {
-                    if (connectState == ConnectState.UNCONNECTED) {
-                        fireOnConnect();
-                    }
+                    tcs.trySetResult(Boolean.TRUE);
                 } else {
-                    connectState = ConnectState.UNCONNECTED;
-                    fireOnConnect();
+                    tcs.trySetError(new Exception());
                 }
             }
         });
+
+        return tcs.getTask();
     }
 
     public void setHeartbeatListener(IHeartbeatListener listener) {
@@ -153,7 +226,14 @@ public class HeartBeat {
     private final class PingTask extends TimerTask {
         @Override
         public void run() {
-            ping();
+            startPing();
+        }
+    }
+
+    private final class HeartBeatTimeoutTask extends TimerTask {
+        @Override
+        public void run() {
+            cancelHeartbeatTimeoutTask();
         }
     }
 }

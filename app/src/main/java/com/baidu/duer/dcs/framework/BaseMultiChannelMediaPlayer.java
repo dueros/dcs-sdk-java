@@ -51,9 +51,7 @@ public abstract class BaseMultiChannelMediaPlayer {
      * @param priority    频道的优先级
      * @return IMediaPlayer 用于处理端能力的播放
      */
-    public IMediaPlayer addNewChannel(String channelName, int priority) {
-        IMediaPlayer mediaPlayer = factory.createMediaPlayer();
-
+    public IMediaPlayer addNewChannel(IMediaPlayer mediaPlayer, String channelName, int priority) {
         ChannelMediaPlayerInfo info = new ChannelMediaPlayerInfo();
         info.channelName = channelName;
         info.priority = priority;

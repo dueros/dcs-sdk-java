@@ -21,6 +21,7 @@ import com.baidu.duer.dcs.devicemodule.audioplayer.message.ClearQueuePayload;
 import com.baidu.duer.dcs.devicemodule.audioplayer.message.PlayPayload;
 import com.baidu.duer.dcs.devicemodule.audioplayer.message.StopPayload;
 import com.baidu.duer.dcs.devicemodule.screen.message.HtmlPayload;
+import com.baidu.duer.dcs.devicemodule.screen.message.RenderVoiceInputTextPayload;
 import com.baidu.duer.dcs.devicemodule.speakcontroller.message.AdjustVolumePayload;
 import com.baidu.duer.dcs.devicemodule.speakcontroller.message.SetMutePayload;
 import com.baidu.duer.dcs.devicemodule.speakcontroller.message.SetVolumePayload;
@@ -102,6 +103,8 @@ public class PayloadConfig {
         namespace = com.baidu.duer.dcs.devicemodule.screen.ApiConstants.NAMESPACE;
         name = com.baidu.duer.dcs.devicemodule.screen.ApiConstants.Directives.HtmlView.NAME;
         insertPayload(namespace, name, HtmlPayload.class);
+        name = com.baidu.duer.dcs.devicemodule.screen.ApiConstants.Directives.RenderVoiceInputText.NAME;
+        insertPayload(namespace, name, RenderVoiceInputTextPayload.class);
     }
 
     void insertPayload(String namespace, String name, Class<?> type) {

@@ -57,16 +57,19 @@ public class DcsResponseDispatcher {
     public void interruptDispatch() {
         // 先清空队列，比如播放一首歌：speak+play指令组合的方式，在speak播报过程中进行打断，play就不需要执行了
         withDialogIdBlockThread.clear();
+        withoutDialogIdBlockThread.clear();
         // 让其处于等待新的指令处理
         unBlockDependentQueue();
     }
 
     public void blockDependentQueue() {
         withDialogIdBlockThread.block();
+        withoutDialogIdBlockThread.block();
     }
 
     public void unBlockDependentQueue() {
         withDialogIdBlockThread.unblock();
+        withoutDialogIdBlockThread.unblock();
     }
 
     public void onResponseBody(DcsResponseBody responseBody) {

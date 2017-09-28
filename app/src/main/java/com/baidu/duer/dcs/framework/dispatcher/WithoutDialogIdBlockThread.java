@@ -15,6 +15,7 @@
  */
 package com.baidu.duer.dcs.framework.dispatcher;
 
+import com.baidu.duer.dcs.devicemodule.voiceoutput.ApiConstants;
 import com.baidu.duer.dcs.framework.DcsResponseDispatcher;
 import com.baidu.duer.dcs.framework.message.DcsResponseBody;
 
@@ -34,6 +35,9 @@ public class WithoutDialogIdBlockThread extends BaseBlockResponseThread {
 
     @Override
     boolean shouldBlock(DcsResponseBody responseBody) {
-        return false;
+        // 如果是speak指令就立马阻塞
+        String directiveName = responseBody.getDirective().getName();
+        return directiveName != null && directiveName.length() > 0
+                && directiveName.equals(ApiConstants.Directives.Speak.NAME);
     }
 }

@@ -15,14 +15,14 @@
  */
 package com.baidu.duer.dcs.http.request;
 
+import com.baidu.dcs.okhttp3.Headers;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.RequestBody;
 import com.baidu.duer.dcs.http.callback.DcsCallback;
 import com.baidu.duer.dcs.http.exceptions.Exceptions;
 
 import java.util.Map;
 
-import okhttp3.Headers;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 
 /**
  * 请求基类

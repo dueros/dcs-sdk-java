@@ -15,9 +15,9 @@
  */
 package com.baidu.duer.dcs.http.callback;
 
-import okhttp3.Call;
-import okhttp3.Request;
-import okhttp3.Response;
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.Response;
 
 /**
  * 网络回调基类

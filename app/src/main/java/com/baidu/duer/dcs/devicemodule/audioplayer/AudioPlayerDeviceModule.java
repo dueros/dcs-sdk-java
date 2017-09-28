@@ -211,6 +211,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
             stutterFinished = false;
             progressReporting = false;
             bufferUnderRunInProgress = false;
+            timer.reset();
         }
 
         @Override
@@ -399,6 +400,11 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
                 }
 
                 @Override
+                public long getMediaPlayerCurrentOffsetInMilliseconds() {
+                    return mediaPlayer.getCurrentPosition();
+                }
+
+                @Override
                 public long getStutterDurationInMilliseconds() {
                     // 缓冲时间ms
                     return bufferingEndMilliseconds - bufferingStartMilliseconds;
@@ -512,5 +518,9 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
 
     public void addAudioPlayListener(IMediaPlayer.IMediaPlayerListener listener) {
         audioPlayerListeners.add(listener);
+    }
+
+    public void removeAudioPlayListener(IMediaPlayer.IMediaPlayerListener listener) {
+        audioPlayerListeners.remove(listener);
     }
 }

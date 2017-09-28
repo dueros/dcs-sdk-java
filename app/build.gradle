@@ -5,7 +5,7 @@ android {
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "com.baidu.duer.dcs"
-        minSdkVersion 21
+        minSdkVersion 18
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -65,9 +65,9 @@ dependencies {
     compile files('libs/commons-fileupload-1.3.2.jar')
     compile files('libs/commons-lang3-3.4.jar')
     compile files('libs/commons-io-2.5.jar')
-    def okHttp3Version = '3.8.1'
-    compile('com.squareup.okhttp3:okhttp:' + okHttp3Version)
-    compile('com.squareup.okhttp3:logging-interceptor:' + okHttp3Version)
-
-    // debugCompile 'com.squareup.leakcanary:leakcanary-android:1.3'
+    compile files('libs/bolts-tasks-1.4.0.jar')
+    compile files('libs/okhttp-3.8.1.jar')
+    // compile 'com.squareup.okio:okio:1.13.0'
+    compile 'javazoom:jlayer:1.0.1'
+    compile files('libs/okio-1.14.0.jar')
 }

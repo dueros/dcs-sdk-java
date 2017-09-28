@@ -15,14 +15,13 @@
  */
 package com.baidu.duer.dcs.http.intercepter;
 
+import com.baidu.dcs.okhttp3.Interceptor;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.Response;
 import com.baidu.duer.dcs.util.LogUtil;
 
 import java.io.IOException;
 import java.util.Locale;
-
-import okhttp3.Interceptor;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * http Interceptor 拦截打印http-log

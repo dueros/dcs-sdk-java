@@ -19,6 +19,7 @@ import com.baidu.duer.dcs.devicemodule.alerts.AlertsDeviceModule;
 import com.baidu.duer.dcs.devicemodule.audioplayer.AudioPlayerDeviceModule;
 import com.baidu.duer.dcs.devicemodule.playbackcontroller.PlaybackControllerDeviceModule;
 import com.baidu.duer.dcs.devicemodule.screen.ScreenDeviceModule;
+import com.baidu.duer.dcs.devicemodule.screen.extend.card.ScreenExtendDeviceModule;
 import com.baidu.duer.dcs.devicemodule.speakcontroller.SpeakerControllerDeviceModule;
 import com.baidu.duer.dcs.devicemodule.system.SystemDeviceModule;
 import com.baidu.duer.dcs.devicemodule.system.message.SetEndPointPayload;
@@ -50,6 +51,7 @@ public class DeviceModuleFactory {
     private SystemDeviceModule systemDeviceModule;
     private PlaybackControllerDeviceModule playbackControllerDeviceModule;
     private ScreenDeviceModule screenDeviceModule;
+    private ScreenExtendDeviceModule screenExtendDeviceModule;
 
     // 数字越大，优先级越高，播放优先级
     private enum MediaChannel {
@@ -69,7 +71,9 @@ public class DeviceModuleFactory {
     public DeviceModuleFactory(final IDeviceModuleHandler deviceModuleHandler) {
         this.deviceModuleHandler = deviceModuleHandler;
         dialogMediaPlayer = deviceModuleHandler.getMultiChannelMediaPlayer()
-                .addNewChannel(MediaChannel.SPEAK.channelName, MediaChannel.SPEAK.priority);
+                .addNewChannel(deviceModuleHandler.getPlatformFactory().createAudioTrackPlayer(),
+                        MediaChannel.SPEAK.channelName,
+                        MediaChannel.SPEAK.priority);
     }
 
 
@@ -123,7 +127,8 @@ public class DeviceModuleFactory {
 
     public void createAudioPlayerDeviceModule() {
         IMediaPlayer mediaPlayer = deviceModuleHandler.getMultiChannelMediaPlayer()
-                .addNewChannel(MediaChannel.AUDIO.channelName,
+                .addNewChannel(deviceModuleHandler.getPlatformFactory().createMediaPlayer(),
+                        MediaChannel.AUDIO.channelName,
                         MediaChannel.AUDIO.priority);
         audioPlayerDeviceModule = new AudioPlayerDeviceModule(mediaPlayer,
                 deviceModuleHandler.getMessageSender());
@@ -136,7 +141,8 @@ public class DeviceModuleFactory {
 
     public void createAlertsDeviceModule() {
         IMediaPlayer mediaPlayer = deviceModuleHandler.getMultiChannelMediaPlayer()
-                .addNewChannel(MediaChannel.ALERT.channelName,
+                .addNewChannel(deviceModuleHandler.getPlatformFactory().createMediaPlayer(),
+                        MediaChannel.ALERT.channelName,
                         MediaChannel.ALERT.priority);
         alertsDeviceModule = new AlertsDeviceModule(mediaPlayer,
                 deviceModuleHandler.getPlatformFactory().createAlertsDataStore(),
@@ -192,6 +198,19 @@ public class DeviceModuleFactory {
         IWebView webView = deviceModuleHandler.getPlatformFactory().getWebView();
         screenDeviceModule = new ScreenDeviceModule(webView, deviceModuleHandler.getMessageSender());
         deviceModuleHandler.addDeviceModule(screenDeviceModule);
+    }
+
+    public void createScreenExtendDeviceModule() {
+        screenExtendDeviceModule = new ScreenExtendDeviceModule(deviceModuleHandler.getMessageSender());
+        deviceModuleHandler.addDeviceModule(screenExtendDeviceModule);
+    }
+
+    public ScreenExtendDeviceModule getScreenExtendDeviceModule() {
+        return screenExtendDeviceModule;
+    }
+
+    public ScreenDeviceModule getScreenDeviceModule() {
+        return screenDeviceModule;
     }
 
     public interface IDeviceModuleHandler {

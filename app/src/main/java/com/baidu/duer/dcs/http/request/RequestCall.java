@@ -15,14 +15,13 @@
  */
 package com.baidu.duer.dcs.http.request;
 
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.OkHttpClient;
+import com.baidu.dcs.okhttp3.Request;
 import com.baidu.duer.dcs.http.DcsHttpManager;
 import com.baidu.duer.dcs.http.callback.DcsCallback;
 
 import java.util.concurrent.TimeUnit;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 
 /**
  * 请求设置

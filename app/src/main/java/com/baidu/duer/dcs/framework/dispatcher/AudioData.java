@@ -15,6 +15,8 @@
  */
 package com.baidu.duer.dcs.framework.dispatcher;
 
+import com.baidu.duer.dcs.framework.DcsStream;
+
 /**
  * 存储音频数据
  * <p>
@@ -22,10 +24,10 @@ package com.baidu.duer.dcs.framework.dispatcher;
  */
 public class AudioData {
     public String contentId;
-    public byte[] partBytes;
+    public DcsStream dcsStream;
 
-    public AudioData(String contentId, byte[] partBytes) {
+    public AudioData(String contentId, DcsStream dcsStream) {
         this.contentId = contentId;
-        this.partBytes = partBytes;
+        this.dcsStream = dcsStream;
     }
 }

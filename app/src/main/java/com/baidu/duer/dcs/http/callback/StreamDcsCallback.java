@@ -15,9 +15,10 @@
  */
 package com.baidu.duer.dcs.http.callback;
 
+import com.baidu.dcs.okhttp3.Response;
+
 import java.io.InputStream;
 
-import okhttp3.Response;
 
 /**
  * 数据流回调

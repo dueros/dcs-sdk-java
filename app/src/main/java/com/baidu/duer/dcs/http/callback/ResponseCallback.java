@@ -15,10 +15,9 @@
  */
 package com.baidu.duer.dcs.http.callback;
 
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.Response;
 import com.baidu.duer.dcs.util.LogUtil;
-
-import okhttp3.Call;
-import okhttp3.Response;
 
 /**
  * framework 返回数据类

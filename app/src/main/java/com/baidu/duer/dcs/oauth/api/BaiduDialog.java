@@ -25,6 +25,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
@@ -49,6 +50,7 @@ public class BaiduDialog extends Dialog {
     private BaseWebView mWebView;
     private FrameLayout mContent;
     private RelativeLayout webViewContainer;
+    private boolean isLoading;
 
     /**
      * 构造BaiduDialog
@@ -86,6 +88,7 @@ public class BaiduDialog extends Dialog {
         webViewContainer = new RelativeLayout(getContext());
         mWebView = new BaseWebView(getContext().getApplicationContext());
         mWebView.setWebViewClient(new BdWebViewClient());
+        mWebView.setWebChromeClient(new BdWebChromeClient());
         mWebView.loadUrl(mUrl);
         mWebView.setLayoutParams(MATCH);
         mWebView.setVisibility(View.INVISIBLE);
@@ -144,20 +147,34 @@ public class BaiduDialog extends Dialog {
             LogUtil.d(LOG_TAG, "Webview loading URL: " + url);
             super.onPageStarted(view, url, favicon);
             mSpinner.show();
+            isLoading = true;
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            mSpinner.dismiss();
-            mContent.setBackgroundColor(Color.TRANSPARENT);
-            mWebView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private class BdWebChromeClient extends WebChromeClient {
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            super.onProgressChanged(view, newProgress);
+            LogUtil.d(LOG_TAG, "Webview loading newProgress: " + newProgress);
+            if (newProgress > 50 && isLoading) {
+                mSpinner.dismiss();
+                isLoading = false;
+                mContent.setBackgroundColor(Color.TRANSPARENT);
+                mWebView.setVisibility(View.VISIBLE);
+            }
         }
     }
 
     @Override
     public void dismiss() {
         super.dismiss();
+        mSpinner.dismiss();
+        isLoading = false;
         webViewContainer.removeView(mWebView);
         mWebView.removeAllViews();
         mWebView.destroy();

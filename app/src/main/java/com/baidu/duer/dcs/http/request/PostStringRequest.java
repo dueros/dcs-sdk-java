@@ -15,13 +15,13 @@
  */
 package com.baidu.duer.dcs.http.request;
 
+import com.baidu.dcs.okhttp3.MediaType;
+import com.baidu.dcs.okhttp3.Request;
+import com.baidu.dcs.okhttp3.RequestBody;
 import com.baidu.duer.dcs.http.exceptions.Exceptions;
 
 import java.util.Map;
 
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 
 /**
  * 用于发送字符串请求

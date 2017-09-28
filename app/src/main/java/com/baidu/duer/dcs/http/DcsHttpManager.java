@@ -15,8 +15,13 @@
  */
 package com.baidu.duer.dcs.http;
 
+import com.baidu.dcs.okhttp3.Call;
+import com.baidu.dcs.okhttp3.Callback;
+import com.baidu.dcs.okhttp3.OkHttpClient;
+import com.baidu.dcs.okhttp3.Response;
 import com.baidu.duer.dcs.http.builder.GetBuilder;
 import com.baidu.duer.dcs.http.builder.PostMultipartBuilder;
+import com.baidu.duer.dcs.http.builder.PostStringBuilder;
 import com.baidu.duer.dcs.http.callback.DcsCallback;
 import com.baidu.duer.dcs.http.intercepter.LoggingInterceptor;
 import com.baidu.duer.dcs.http.request.RequestCall;
@@ -24,10 +29,6 @@ import com.baidu.duer.dcs.http.utils.Platform;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
 
 /**
  * 网络请求-单例
@@ -39,31 +40,40 @@ public class DcsHttpManager {
     public static final long DEFAULT_MILLISECONDS = 60 * 1000L;
     private OkHttpClient mOkHttpClient;
     private Platform mPlatform;
-
-    private static class DcsHttpManagerHolder {
-        private static final DcsHttpManager INSTANCE = new DcsHttpManager();
-    }
+    private volatile static DcsHttpManager mInstance;
 
     public static DcsHttpManager getInstance() {
-        return DcsHttpManagerHolder.INSTANCE;
+        return initClient(null);
     }
 
-    private DcsHttpManager() {
+    public DcsHttpManager(OkHttpClient okHttpClient) {
         if (mOkHttpClient == null) {
             // http数据log，日志中打印出HTTP请求&响应数据
             // HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
             // 包含header、body数据
-            mOkHttpClient = new OkHttpClient.Builder()
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     .retryOnConnectionFailure(false)
                     .readTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)
                     .writeTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)
                     .connectTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)
                     // .addInterceptor(new RetryInterceptor(3))
-                    .addInterceptor(new LoggingInterceptor())
-                    // .connectionPool(new ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
-                    .build();
+                    .addInterceptor(new LoggingInterceptor());
+            mOkHttpClient = builder.build();
+        } else {
+            mOkHttpClient = okHttpClient;
         }
         mPlatform = Platform.get();
+    }
+
+    public static DcsHttpManager initClient(OkHttpClient okHttpClient) {
+        if (mInstance == null) {
+            synchronized (DcsHttpManager.class) {
+                if (mInstance == null) {
+                    mInstance = new DcsHttpManager(okHttpClient);
+                }
+            }
+        }
+        return mInstance;
     }
 
     public OkHttpClient getOkHttpClient() {
@@ -78,6 +88,10 @@ public class DcsHttpManager {
         return new PostMultipartBuilder();
     }
 
+    public static PostStringBuilder postString() {
+        return new PostStringBuilder();
+    }
+
     public void execute(final RequestCall requestCall, DcsCallback dcsCallback) {
 
         if (dcsCallback == null) {
@@ -86,7 +100,7 @@ public class DcsHttpManager {
         final DcsCallback finalDCSCallback = dcsCallback;
         final int id = requestCall.getOkHttpRequest().getId();
 
-        requestCall.getCall().enqueue(new okhttp3.Callback() {
+        requestCall.getCall().enqueue(new Callback() {
             @Override
             public void onFailure(Call call, final IOException e) {
                 sendFailResultCallback(call, e, finalDCSCallback, id);

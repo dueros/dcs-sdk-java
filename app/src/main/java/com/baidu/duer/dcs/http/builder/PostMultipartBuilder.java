@@ -15,6 +15,7 @@
  */
 package com.baidu.duer.dcs.http.builder;
 
+import com.baidu.dcs.okhttp3.RequestBody;
 import com.baidu.duer.dcs.http.request.PostMultipartRequest;
 import com.baidu.duer.dcs.http.request.RequestCall;
 
@@ -23,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import okhttp3.RequestBody;
 
 /**
  * post请求多part构建
