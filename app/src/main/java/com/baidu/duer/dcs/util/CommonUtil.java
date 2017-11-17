@@ -22,6 +22,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import com.baidu.android.common.util.DeviceId;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -189,21 +191,6 @@ public class CommonUtil {
      * @return String 设备唯一标识
      */
     public static String getDeviceUniqueID() {
-        String devIDShort = "35" + (Build.BOARD.length() % 10) + (Build.BRAND.length() % 10);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            devIDShort += (Build.SUPPORTED_ABIS[0].length() % 10);
-        } else {
-            devIDShort += (Build.CPU_ABI.length() % 10);
-        }
-        devIDShort += (Build.DEVICE.length() % 10) + (Build.MANUFACTURER.length() % 10)
-                + (Build.MODEL.length() % 10) + (Build.PRODUCT.length() % 10);
-        String serial;
-        try {
-            serial = Build.class.getField("SERIAL").get(null).toString();
-            return new UUID(devIDShort.hashCode(), serial.hashCode()).toString();
-        } catch (Exception e) {
-            serial = "Dueros000";
-        }
-        return new UUID(devIDShort.hashCode(), serial.hashCode()).toString();
+        return DeviceId.getCUID(SystemServiceManager.getAppContext());
     }
 }
