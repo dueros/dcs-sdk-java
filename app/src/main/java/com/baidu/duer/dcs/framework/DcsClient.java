@@ -15,10 +15,18 @@
  */
 package com.baidu.duer.dcs.framework;
 
+import android.content.Context;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.baidu.dcs.okhttp3.Call;
 import com.baidu.dcs.okhttp3.Response;
+import com.baidu.duer.dcs.api.IConnectionStatusListener;
+import com.baidu.duer.dcs.devicemodule.system.message.ThrowExceptionPayload;
 import com.baidu.duer.dcs.framework.decoder.IDecoder;
 import com.baidu.duer.dcs.framework.decoder.JLayerDecoderImpl;
 import com.baidu.duer.dcs.framework.dispatcher.AudioData;
@@ -27,11 +35,21 @@ import com.baidu.duer.dcs.framework.heartbeat.HeartBeat;
 import com.baidu.duer.dcs.framework.message.DcsRequestBody;
 import com.baidu.duer.dcs.framework.message.DcsResponseBody;
 import com.baidu.duer.dcs.framework.message.DcsStreamRequestBody;
+import com.baidu.duer.dcs.framework.message.Directive;
+import com.baidu.duer.dcs.framework.message.Payload;
 import com.baidu.duer.dcs.http.HttpConfig;
 import com.baidu.duer.dcs.http.HttpRequestInterface;
 import com.baidu.duer.dcs.http.OkHttpRequestImpl;
 import com.baidu.duer.dcs.http.callback.ResponseCallback;
 import com.baidu.duer.dcs.util.LogUtil;
+import com.baidu.duer.dcs.util.NetWorkStateReceiver;
+import com.baidu.duer.dcs.util.NetWorkUtil;
+import com.baidu.duer.dcs.util.SystemServiceManager;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static com.baidu.duer.dcs.api.IConnectionStatusListener.ConnectionStatus.CONNECTED;
 
 
 /**
@@ -49,20 +67,66 @@ public class DcsClient {
     private IDecoder decoder;
     private final MultipartParser directiveParser;
     private final MultipartParser eventParser;
-    private boolean isReleased;
+    private final List<IConnectionStatusListener> connectStatusListeners;
+    private volatile boolean isReleased;
+    private NetWorkStateReceiver netWorkStateReceiver;
+
+    private Context context = SystemServiceManager.getAppContext();
+    private volatile IConnectionStatusListener.ConnectionStatus connectStatus;
+    private Handler handlerMain = new Handler(Looper.getMainLooper());
+    private CalculateRetryTime calculateRetryTime;
+    private volatile boolean isNeedConnect;
+    private Runnable startConnectRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 下一次连接时重制状态
+            connect();
+        }
+    };
+    /**
+     * 建立连接
+     */
+    private final IResponseListener connectListener = new SimpleResponseListener() {
+        @Override
+        public void onSucceed(int statusCode) {
+            LogUtil.d(TAG, "getDirectives statusCode: " + statusCode);
+            if (statusCode == 200) {
+                connectStatus = CONNECTED;
+                fireConnectStatus(connectStatus);
+                heartBeat.start();
+                stopTryConnect();
+            } else {
+                tryConnect();
+            }
+        }
+
+        @Override
+        public void onFailed(String errorMessage) {
+            LogUtil.d(TAG, "getDirectives onFailed，" + errorMessage);
+            tryConnect();
+        }
+    };
+
+    private final NetWorkStateReceiver.INetWorkStateListener netWorkStateListener =
+            new NetWorkStateReceiver.INetWorkStateListener() {
+                @Override
+                public void onNetWorkStateChange(int netType) {
+                    Log.d(TAG, "onNetWorkStateChange-netType:" + netType);
+                    if (netType != NetWorkUtil.NETWORK_NONE) {
+                        Log.d(TAG, " onNetWorkStateChange ");
+                        tryConnectAtOnce();
+                    } else {
+                        connectStatus = IConnectionStatusListener.ConnectionStatus.DISCONNECTED;
+                        fireConnectStatus(connectStatus);
+                    }
+                }
+            };
 
     public DcsClient(DcsResponseDispatcher dcsResponseDispatcher, IDcsClientListener dcsClientListener) {
         this.dcsResponseDispatcher = dcsResponseDispatcher;
         this.dcsClientListener = dcsClientListener;
         httpRequestImp = new OkHttpRequestImpl();
         heartBeat = new HeartBeat(httpRequestImp);
-        heartBeat.setHeartbeatListener(new HeartBeat.IHeartbeatListener() {
-            @Override
-            public void onStartConnect() {
-                startConnect();
-            }
-        });
-
         decoder = new JLayerDecoderImpl();
 
         MultipartParser.IMultipartParserListener parserListener = new ClientParserListener();
@@ -70,42 +134,108 @@ public class DcsClient {
         directiveParser = new MultipartParser(decoder, new ClientParserListener() {
             @Override
             public void onClose() {
-                startConnect();
+                super.onClose();
+                Log.d(TAG, "directiveParser-onClose");
+
+                if (connectStatus != IConnectionStatusListener.ConnectionStatus.PENDING) {
+                    connectStatus = IConnectionStatusListener.ConnectionStatus.DISCONNECTED;
+                    fireConnectStatus(connectStatus);
+                }
+
+                tryConnectAtOnce();
+            }
+
+            @Override
+            public void onResponseBody(DcsResponseBody responseBody) {
+                super.onResponseBody(responseBody);
+                Directive directive = responseBody.getDirective();
+                if (directive != null) {
+                    Payload payload = directive.getPayload();
+                    if (payload != null) {
+                        if (payload instanceof ThrowExceptionPayload) {
+                            // 服务器下发了ThrowException异常
+                            isNeedConnect = false;
+                        }
+                    }
+                }
             }
         });
         eventParser = new MultipartParser(decoder, parserListener);
+        netWorkStateReceiver = new NetWorkStateReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        context.registerReceiver(netWorkStateReceiver, filter);
+
+        netWorkStateReceiver.setOnNetWorkStateListener(netWorkStateListener);
+
+        connectStatusListeners = new CopyOnWriteArrayList<>();
+        connectStatus = IConnectionStatusListener.ConnectionStatus.DISCONNECTED;
+        calculateRetryTime = new CalculateRetryTime();
+        isNeedConnect = true;
     }
 
     public void release() {
-        isReleased = true;
-        decoder.release();
-        heartBeat.release();
-        httpRequestImp.cancelRequest(HttpConfig.HTTP_DIRECTIVES_TAG);
-        httpRequestImp.cancelRequest(HttpConfig.HTTP_EVENT_TAG);
+        Log.d(TAG, "release");
+        stopTryConnect();
+        try {
+            if (netWorkStateReceiver != null) {
+                context.unregisterReceiver(netWorkStateReceiver);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            isReleased = true;
+            decoder.release();
+            heartBeat.release();
+            httpRequestImp.cancelRequest(HttpConfig.HTTP_DIRECTIVES_TAG);
+            httpRequestImp.cancelRequest(HttpConfig.HTTP_EVENT_TAG);
+        }
     }
-
-    /**
-     * 建立连接
-     */
-    private final IResponseListener connectListener = new IResponseListener() {
-        @Override
-        public void onSucceed(int statusCode) {
-            LogUtil.d(TAG, "getDirectives onSucceed");
-            fireOnConnected();
-            heartBeat.startNormalPing();
-        }
-
-        @Override
-        public void onFailed(String errorMessage) {
-            LogUtil.d(TAG, "getDirectives onFailed");
-            fireOnUnconnected();
-            startConnect();
-        }
-    };
 
     public void startConnect() {
         if (!isReleased) {
             getDirectives(connectListener);
+        }
+    }
+
+    public boolean isConnected() {
+        return connectStatus == IConnectionStatusListener.ConnectionStatus.CONNECTED;
+    }
+
+    private void tryConnectAtOnce() {
+        resetRetryTime();
+        tryConnect();
+    }
+
+    private void tryConnect() {
+        if (isNeedConnect) {
+            heartBeat.stop();
+            connectStatus = IConnectionStatusListener.ConnectionStatus.DISCONNECTED;
+            fireConnectStatus(connectStatus);
+            handlerMain.removeCallbacks(startConnectRunnable);
+            handlerMain.postDelayed(startConnectRunnable, getRetryTime());
+        }
+    }
+
+    private void stopTryConnect() {
+        resetRetryTime();
+        handlerMain.removeCallbacks(startConnectRunnable);
+    }
+
+    private void connect() {
+        if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+            Log.d(TAG, "connect-accessToken is null !");
+            return;
+        }
+        if (!isReleased && connectStatus == IConnectionStatusListener.ConnectionStatus.DISCONNECTED) {
+            if (NetWorkUtil.isNetworkConnected(context)) {
+                connectStatus = IConnectionStatusListener.ConnectionStatus.PENDING;
+                fireConnectStatus(connectStatus);
+                getDirectives(connectListener);
+            } else {
+                connectStatus = IConnectionStatusListener.ConnectionStatus.DISCONNECTED;
+                fireConnectStatus(connectStatus);
+            }
         }
     }
 
@@ -120,7 +250,7 @@ public class DcsClient {
                             DcsStreamRequestBody streamRequestBody, final IResponseListener listener) {
         Log.e("logId", "logId send  stream start");
         decoder.interruptDecode();
-        // httpRequestImp.cancelRequest(HttpConfig.HTTP_VOICE_TAG);
+        httpRequestImp.cancelRequest(HttpConfig.HTTP_VOICE_TAG);
         httpRequestImp.doPostEventMultipartAsync(requestBody,
                 streamRequestBody, getResponseCallback(eventParser, new IResponseListener() {
                     @Override
@@ -135,8 +265,6 @@ public class DcsClient {
                         if (listener != null) {
                             listener.onFailed(errorMessage);
                         }
-
-                        heartBeat.startImmediatePing();
                     }
                 }));
     }
@@ -169,7 +297,6 @@ public class DcsClient {
         }
     }
 
-
     private ResponseCallback getResponseCallback(final MultipartParser multipartParser,
                                                  final IResponseListener responseListener) {
         return new ResponseCallback() {
@@ -178,11 +305,8 @@ public class DcsClient {
                 LogUtil.d(TAG, "onError,", e);
                 if (call.request().tag().equals(HttpConfig.DIRECTIVES)
                         || call.request().tag().equals(HttpConfig.HTTP_VOICE_TAG)) {
-
                     fireOnFailed(e.getMessage());
-
                 }
-
             }
 
             @Override
@@ -190,8 +314,10 @@ public class DcsClient {
                 super.onResponse(response, id);
                 LogUtil.d(TAG, "onResponse OK ," + response.request().url());
                 LogUtil.d(TAG, "onResponse code ," + response.code());
-                if (responseListener != null) {
-                    responseListener.onSucceed(response.code());
+                if (response.isSuccessful()) {
+                    if (responseListener != null) {
+                        responseListener.onSucceed(response.code());
+                    }
                 }
             }
 
@@ -221,6 +347,38 @@ public class DcsClient {
         void onUnconnected();
     }
 
+    /**
+     * 添加连接状态listener
+     *
+     * @param
+     */
+    public void addConnectStatusListener(IConnectionStatusListener connectionStatusListener) {
+        connectStatusListeners.add(connectionStatusListener);
+    }
+
+    public void removeConnectStatusListeners(IConnectionStatusListener connectionStatusListener) {
+        connectStatusListeners.remove(connectionStatusListener);
+    }
+
+    private void fireConnectStatus(final IConnectionStatusListener.ConnectionStatus connectStatus) {
+        handlerMain.post(new Runnable() {
+            @Override
+            public void run() {
+                for (IConnectionStatusListener listener : connectStatusListeners) {
+                    listener.onConnectStatus(connectStatus);
+                }
+            }
+        });
+    }
+
+    private int getRetryTime() {
+        return calculateRetryTime.getRetryTime();
+    }
+
+    public void resetRetryTime() {
+        calculateRetryTime.reset();
+    }
+
     private class ClientParserListener implements MultipartParser.IMultipartParserListener {
         @Override
         public void onResponseBody(DcsResponseBody responseBody) {
@@ -239,7 +397,7 @@ public class DcsClient {
 
         @Override
         public void onHeartBeat() {
-            heartBeat.receiveHeartbeat();
+            // heartBeat.receiveHeartbeat();
         }
 
         @Override

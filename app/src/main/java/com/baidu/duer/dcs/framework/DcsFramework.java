@@ -194,6 +194,10 @@ public class DcsFramework {
         dcsClient.sendRequest(dcsRequestBody, responseListener);
     }
 
+    public DcsClient getDcsClient() {
+        return dcsClient;
+    }
+
     private void createDeviceModuleFactory() {
         deviceModuleFactory = new DeviceModuleFactory(new DeviceModuleFactory.IDeviceModuleHandler() {
             @Override

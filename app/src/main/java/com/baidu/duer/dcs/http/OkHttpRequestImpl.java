@@ -15,10 +15,10 @@
  */
 package com.baidu.duer.dcs.http;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.baidu.dcs.okhttp3.RequestBody;
-import com.baidu.duer.dcs.framework.DcsClient;
 import com.baidu.duer.dcs.framework.message.DcsRequestBody;
 import com.baidu.duer.dcs.framework.message.DcsStreamRequestBody;
 import com.baidu.duer.dcs.http.callback.DcsCallback;
@@ -44,6 +44,10 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
 
     @Override
     public void doPostEventStringAsync(DcsRequestBody requestBody, DcsCallback dcsCallback) {
+        if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+            Log.d(TAG, "doPostEventStringAsync-accessToken is null !");
+            return;
+        }
         String bodyJson = ObjectMapperUtil.instance().objectToJson(requestBody);
         Map<String, RequestBody> multiParts = new LinkedHashMap<>();
         multiParts.put(HttpConfig.Parameters.DATA_METADATA,
@@ -61,6 +65,10 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
     public void doPostEventMultipartAsync(DcsRequestBody requestBody,
                                           DcsStreamRequestBody streamRequestBody,
                                           DcsCallback dcsCallback) {
+        if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+            Log.d(TAG, "doPostEventMultipartAsync-accessToken is null !");
+            return;
+        }
         String bodyJson = ObjectMapperUtil.instance().objectToJson(requestBody);
         Log.d("time", "开始发语音");
         Map<String, RequestBody> multiParts = new LinkedHashMap<>();
@@ -77,21 +85,30 @@ public class OkHttpRequestImpl implements HttpRequestInterface {
     }
 
     @Override
-    public void doGetDirectivesAsync( DcsCallback dcsCallback) {
+    public void doGetDirectivesAsync(DcsCallback dcsCallback) {
         LogUtil.d(TAG, "doGetDirectivesAsync");
+        if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+            Log.d(TAG, "doGetDirectivesAsync-accessToken is null !");
+            return;
+        }
+        long time = 7 * 24 * 60 * 60 * 1000L;
         DcsHttpManager.get()
                 .url(HttpConfig.getDirectivesUrl())
                 .headers(HttpConfig.getDCSHeaders())
                 .tag(HttpConfig.HTTP_DIRECTIVES_TAG)
                 .build()
-                .connTimeOut(DcsClient.HTTP_DIRECTIVES_TIME)
-                .readTimeOut(DcsClient.HTTP_DIRECTIVES_TIME)
+                .connTimeOut(time)
+                .readTimeOut(time)
                 .execute(dcsCallback);
     }
 
     @Override
     public void doGetPingAsync(DcsRequestBody requestBody, DcsCallback dcsCallback) {
         LogUtil.d(TAG, "doGetPingAsync");
+        if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+            Log.d(TAG, "doGetPingAsync-accessToken is null !");
+            return;
+        }
         DcsHttpManager.get()
                 .url(HttpConfig.getPingUrl())
                 .headers(HttpConfig.getDCSHeaders())

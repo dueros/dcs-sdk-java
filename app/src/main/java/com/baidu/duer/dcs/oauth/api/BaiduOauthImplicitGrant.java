@@ -46,9 +46,9 @@ public class BaiduOauthImplicitGrant implements Parcelable {
     public static final String SUCCESS_URI = "bdconnect://success";
     private static final String OAUTHORIZE_URL = "https://openapi.baidu.com/oauth/2.0/authorize";
     // 账号登录
-    // private static final String DISPLAY_STRING = "mobile";
+    private static final String DISPLAY_STRING = "mobile";
     // 扫码登录
-    private static final String DISPLAY_STRING = "popup";
+    // private static final String DISPLAY_STRING = "popup";
     private static final String[] DEFAULT_PERMISSIONS = {"basic"};
     private static final String KEY_CLIENT_ID = "clientId";
     // 应用注册的api key信息

@@ -18,7 +18,6 @@ package com.baidu.duer.dcs.util;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
@@ -34,7 +33,6 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.UUID;
 
 /**
  * 辅助工具类
@@ -191,6 +189,7 @@ public class CommonUtil {
      * @return String 设备唯一标识
      */
     public static String getDeviceUniqueID() {
+        // getCUID是DeviceId.getDeviceID()+"|"+DeviceId.getIMEI();
         return DeviceId.getCUID(SystemServiceManager.getAppContext());
     }
 }

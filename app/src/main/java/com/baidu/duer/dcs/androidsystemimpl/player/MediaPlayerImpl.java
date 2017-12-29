@@ -16,17 +16,23 @@
 package com.baidu.duer.dcs.androidsystemimpl.player;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.baidu.duer.dcs.androidapp.DcsSampleApplication;
 import com.baidu.duer.dcs.systeminterface.IMediaPlayer;
 import com.baidu.duer.dcs.util.LogUtil;
+import com.baidu.duer.dcs.util.SystemServiceManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -59,6 +65,8 @@ public class MediaPlayerImpl implements IMediaPlayer {
     private List<IMediaPlayer.IMediaPlayerListener> mediaPlayerListeners;
     private boolean isActive;
     private TelephonyManager telephonyManager;
+    private Context context = SystemServiceManager.getAppContext();
+    private PosHandler posHandler;
 
     public MediaPlayerImpl() {
         mMediaPlayer = new MediaPlayer();
@@ -73,16 +81,17 @@ public class MediaPlayerImpl implements IMediaPlayer {
         // mMediaPlayer.setOnInfoListener(infoListener);
 
         // 读取音量和静音的数据
-        currentVolume = (float) MediaPlayerPreferenceUtil.get(DcsSampleApplication.getInstance(),
+        currentVolume = (float) MediaPlayerPreferenceUtil.get(context,
                 KEY_SP_VOLUME, 0.8f);
-        isMute = (boolean) MediaPlayerPreferenceUtil.get(DcsSampleApplication.getInstance(),
+        isMute = (boolean) MediaPlayerPreferenceUtil.get(context,
                 KEY_SP_MUTE, false);
         // LinkedList
         mediaPlayerListeners = Collections.synchronizedList(new LinkedList<IMediaPlayer.IMediaPlayerListener>());
+        posHandler = new PosHandler(Looper.getMainLooper());
 
         // 来电监听
         telephonyManager = (TelephonyManager)
-                DcsSampleApplication.getInstance().getSystemService(Service.TELEPHONY_SERVICE);
+                context.getSystemService(Service.TELEPHONY_SERVICE);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
     }
 
@@ -156,11 +165,13 @@ public class MediaPlayerImpl implements IMediaPlayer {
             playAsset(url.substring(ASSERT_PREFIX.length()));
         } else {
             try {
-                mMediaPlayer.reset();
-                mMediaPlayer.setDataSource(url);
-                // Async
-                mMediaPlayer.prepareAsync();
-                mCurrentState = IMediaPlayer.PlayState.PREPARING;
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.reset();
+                    mMediaPlayer.setDataSource(url);
+                    // Async
+                    mMediaPlayer.prepareAsync();
+                    mCurrentState = IMediaPlayer.PlayState.PREPARING;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 LogUtil.d(TAG, "playPath", e);
@@ -174,7 +185,7 @@ public class MediaPlayerImpl implements IMediaPlayer {
     private void playAsset(String resName) {
         LogUtil.d(TAG, "playAsset:" + resName);
         try {
-            AssetManager am = DcsSampleApplication.getInstance().getAssets();
+            AssetManager am = context.getAssets();
             AssetFileDescriptor afd = am.openFd(resName);
             mMediaPlayer.reset();
             mMediaPlayer.setDataSource(afd.getFileDescriptor(),
@@ -192,17 +203,23 @@ public class MediaPlayerImpl implements IMediaPlayer {
 
     @Override
     public void pause() {
-        if (mCurrentState == IMediaPlayer.PlayState.PLAYING
-                || mCurrentState == IMediaPlayer.PlayState.PREPARED
-                || mCurrentState == IMediaPlayer.PlayState.PREPARING) {
+        posHandler.removeMessages(MSG_UPDATE_PROGRESS);
+        Log.d(TAG, "mCurrentState = " + mCurrentState);
+        if (mCurrentState == IMediaPlayer.PlayState.PLAYING) {
             mMediaPlayer.pause();
             mCurrentState = IMediaPlayer.PlayState.PAUSED;
             fireOnPaused();
+            return;
+        }
+        if (mCurrentState == IMediaPlayer.PlayState.PREPARED
+                || mCurrentState == IMediaPlayer.PlayState.PREPARING) {
+            mCurrentState = IMediaPlayer.PlayState.PAUSED;
         }
     }
 
     @Override
     public void stop() {
+        posHandler.removeMessages(MSG_UPDATE_PROGRESS);
         if (mMediaPlayer != null) {
             mMediaPlayer.stop();
             mCurrentState = IMediaPlayer.PlayState.STOPPED;
@@ -218,10 +235,11 @@ public class MediaPlayerImpl implements IMediaPlayer {
 
     @Override
     public void resume() {
-        if (mCurrentState == IMediaPlayer.PlayState.PAUSED) {
+        if (mCurrentState == IMediaPlayer.PlayState.PAUSED || mCurrentState == IMediaPlayer.PlayState.PREPARED) {
             mMediaPlayer.start();
             mCurrentState = IMediaPlayer.PlayState.PLAYING;
             firePlaying();
+            posHandler.sendEmptyMessage(MSG_UPDATE_PROGRESS);
         }
     }
 
@@ -239,6 +257,8 @@ public class MediaPlayerImpl implements IMediaPlayer {
             audioStreamStore.speakAfter();
         }
         mediaPlayerListeners.clear();
+        posHandler.removeMessages(MSG_UPDATE_PROGRESS);
+        posHandler.removeCallbacksAndMessages(null);
     }
 
     @Override
@@ -269,9 +289,9 @@ public class MediaPlayerImpl implements IMediaPlayer {
             mMediaPlayer.setVolume(volume, volume);
         }
         //  保存数据
-        MediaPlayerPreferenceUtil.put(DcsSampleApplication.getInstance(),
+        MediaPlayerPreferenceUtil.put(context,
                 KEY_SP_VOLUME, currentVolume);
-        MediaPlayerPreferenceUtil.put(DcsSampleApplication.getInstance(),
+        MediaPlayerPreferenceUtil.put(context,
                 KEY_SP_MUTE, isMute);
     }
 
@@ -291,7 +311,7 @@ public class MediaPlayerImpl implements IMediaPlayer {
             }
         }
         //  保存数据
-        MediaPlayerPreferenceUtil.put(DcsSampleApplication.getInstance(),
+        MediaPlayerPreferenceUtil.put(context,
                 KEY_SP_MUTE, isMute);
     }
 
@@ -427,6 +447,10 @@ public class MediaPlayerImpl implements IMediaPlayer {
     private MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
         public void onPrepared(MediaPlayer mp) {
+            // prepare是异步 解决在pause以后继续播放的bug
+            if (mCurrentState != PlayState.PREPARING) {
+                return;
+            }
             LogUtil.d(TAG, "onPrepared");
             mCurrentState = IMediaPlayer.PlayState.PREPARED;
             isError38 = false;
@@ -441,6 +465,13 @@ public class MediaPlayerImpl implements IMediaPlayer {
                 setVolume(currentVolume);
             }
             seekTo(currentSeekMilliseconds);
+            // 需要seekTo的
+            if (currentSeekMilliseconds > 0) {
+                seekTo(currentSeekMilliseconds);
+            } else {
+                startRealPlay(mp);
+            }
+            posHandler.obtainMessage(MSG_UPDATE_PROGRESS).sendToTarget();
         }
     };
 
@@ -460,6 +491,7 @@ public class MediaPlayerImpl implements IMediaPlayer {
                 isError38 = true;
                 return false;
             }
+            posHandler.removeMessages(MSG_UPDATE_PROGRESS);
             isError38 = false;
             mCurrentState = IMediaPlayer.PlayState.ERROR;
             JSONObject jsonObject = new JSONObject();
@@ -496,24 +528,34 @@ public class MediaPlayerImpl implements IMediaPlayer {
         }
     };
 
+    private void startRealPlay(MediaPlayer mp) {
+        if (mCurrentState == IMediaPlayer.PlayState.PREPARED) {
+            mp.start();
+            mCurrentState = IMediaPlayer.PlayState.PLAYING;
+            firePlaying();
+            fireOnDuration(mp.getDuration());
+        }
+    }
     private MediaPlayer.OnSeekCompleteListener seekCompleteListener = new MediaPlayer.OnSeekCompleteListener() {
         @Override
         public void onSeekComplete(MediaPlayer mp) {
             LogUtil.d(TAG, "onSeekComplete");
-            if (mCurrentState == IMediaPlayer.PlayState.PREPARED) {
-                mp.start();
-                mCurrentState = IMediaPlayer.PlayState.PLAYING;
-                firePlaying();
-            }
+            startRealPlay(mp);
         }
     };
 
     private MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
+            // 如果播放出错了，它会回调OnCompletionListener
+            if (mCurrentState == IMediaPlayer.PlayState.ERROR) {
+                return;
+            }
             if (isError38) {
                 return;
             }
+            posHandler.removeMessages(MSG_UPDATE_PROGRESS);
+            fireUpdateProgress(100);
             LogUtil.d(TAG, "onCompletion");
             // delete audio file
             if (audioStreamStore != null) {
@@ -524,4 +566,47 @@ public class MediaPlayerImpl implements IMediaPlayer {
             fireOnCompletion();
         }
     };
+    private void fireOnDuration(long milliseconds) {
+        for (IMediaPlayerListener listener : mediaPlayerListeners) {
+            if (listener != null) {
+                listener.onDuration(milliseconds);
+            }
+        }
+    }
+
+    private void fireUpdateProgress(int percent) {
+        for (IMediaPlayerListener listener : mediaPlayerListeners) {
+            if (listener != null) {
+                listener.onUpdateProgress(percent);
+            }
+        }
+    }
+
+    private static final int MSG_UPDATE_PROGRESS = 1;
+
+    private final class PosHandler extends Handler {
+        PosHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case MSG_UPDATE_PROGRESS:
+                    long duration = MediaPlayerImpl.this.getDuration();
+                    long currentPosition = MediaPlayerImpl.this.getCurrentPosition();
+                    if (duration > 0 && currentPosition >= 0) {
+                        int percent = (int) (currentPosition * 100 / duration);
+                        if (percent >= 0 && percent <= 100) {
+                            MediaPlayerImpl.this.fireUpdateProgress(percent);
+                        }
+                        sendEmptyMessageDelayed(MSG_UPDATE_PROGRESS, 500);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }

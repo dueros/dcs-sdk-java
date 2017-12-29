@@ -15,6 +15,7 @@
  */
 package com.baidu.duer.dcs.androidapp;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -29,7 +30,7 @@ import com.baidu.duer.dcs.devicemodule.screen.message.HtmlPayload;
  * <p>
  * Created by zhangyan42@baidu.com on 2017/5/31.
  */
-public class DcsSampleScreenHtmlActivity extends DcsSampleBaseActivity {
+public class DcsSampleScreenHtmlActivity extends Activity {
     private HtmlPayload htmlPayLoad;
     private RelativeLayout relativeLayout;
     private BaseWebView webView;
