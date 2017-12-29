@@ -173,7 +173,9 @@ public class BaiduDialog extends Dialog {
     @Override
     public void dismiss() {
         super.dismiss();
-        mSpinner.dismiss();
+        if (mSpinner.isShowing()) {
+            mSpinner.dismiss();
+        }
         isLoading = false;
         webViewContainer.removeView(mWebView);
         mWebView.removeAllViews();

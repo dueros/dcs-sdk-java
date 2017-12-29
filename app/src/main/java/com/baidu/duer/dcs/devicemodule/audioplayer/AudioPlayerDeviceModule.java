@@ -15,6 +15,8 @@
  */
 package com.baidu.duer.dcs.devicemodule.audioplayer;
 
+import android.util.Log;
+
 import com.baidu.duer.dcs.devicemodule.audioplayer.message.ClearQueuePayload;
 import com.baidu.duer.dcs.devicemodule.audioplayer.message.PlayPayload;
 import com.baidu.duer.dcs.devicemodule.audioplayer.message.PlaybackStatePayload;
@@ -31,10 +33,9 @@ import com.baidu.duer.dcs.framework.message.Header;
 import com.baidu.duer.dcs.systeminterface.IMediaPlayer;
 import com.baidu.duer.dcs.util.LogUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 音乐播放的端能力实现，处理指令：Play，Stop，ClearQueue
@@ -61,6 +62,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
     private AudioPlayerProgressReporter progressReporter;
     // 回调接口
     private List<IMediaPlayer.IMediaPlayerListener> audioPlayerListeners;
+    private long mStoppedOffsetInMilliseconds = 0;
 
     public AudioPlayerDeviceModule(IMediaPlayer mediaPlayer,
                                    IMessageSender messageSender) {
@@ -74,8 +76,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
         this.progressReporter = new AudioPlayerProgressReporter(
                 new ProgressReportDelayEventRunnable(audioPlayStateReport),
                 new ProgressReportIntervalEventRunnable(audioPlayStateReport), timer);
-        this.audioPlayerListeners = Collections.synchronizedList(
-                new ArrayList<IMediaPlayer.IMediaPlayerListener>());
+        this.audioPlayerListeners = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -202,6 +203,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
         private boolean progressReporting;
         // 是否处于缓冲中
         private boolean bufferUnderRunInProgress;
+        private boolean isNearlyFinished;
 
         @Override
         public void onInit() {
@@ -212,6 +214,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
             progressReporting = false;
             bufferUnderRunInProgress = false;
             timer.reset();
+            isNearlyFinished = false;
         }
 
         @Override
@@ -269,7 +272,6 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
             stopTimerAndProgressReporter();
             playQueue.poll();
             audioPlayStateReport.playbackFinished();
-            audioPlayStateReport.playbackNearlyFinished();
             if (!playQueue.isEmpty()) {
                 startPlay();
             }
@@ -278,7 +280,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
 
         @Override
         public void onRelease() {
-            LogUtil.d(TAG, "onError");
+            LogUtil.d(TAG, "onRelease");
             stopTimerAndProgressReporter();
             fireOnRelease();
         }
@@ -329,6 +331,17 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
                 audioPlayStateReport.playbackStutterFinished();
             }
         }
+
+        @Override
+        public void onUpdateProgress(int percent) {
+            super.onUpdateProgress(percent);
+            Log.d(TAG, "onUpdateProgress:" + percent);
+            if (percent >= 90 && !isNearlyFinished) {
+                Log.d(TAG, "playbackNearlyFinished ok. ");
+                isNearlyFinished = true;
+                audioPlayStateReport.playbackNearlyFinished();
+            }
+        }
     };
 
     private void startTimerAndProgressReporter() {
@@ -360,18 +373,22 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
         if (!playQueue.isEmpty() && isPlayingOrPaused()) {
             stopTimerAndProgressReporter();
             // 要把播放策略中的对应的那一条删除了
+            mStoppedOffsetInMilliseconds = mediaPlayer.getCurrentPosition();
             mediaPlayer.stop();
         }
     }
 
+
     private boolean isPlaying() {
         return (audioPlayStateReport.getState() == AudioPlayStateReport.AudioPlayerState.PLAYING
                 || audioPlayStateReport.getState() == AudioPlayStateReport.AudioPlayerState.PAUSED
-                || audioPlayStateReport.getState() == AudioPlayStateReport.AudioPlayerState.BUFFER_UNDERRUN);
+                || audioPlayStateReport.getState() == AudioPlayStateReport.AudioPlayerState
+                .BUFFER_UNDERRUN);
     }
 
     private boolean isPlayingOrPaused() {
-        return isPlaying() || audioPlayStateReport.getState() == AudioPlayStateReport.AudioPlayerState.PAUSED;
+        return isPlaying() || audioPlayStateReport.getState() == AudioPlayStateReport
+                .AudioPlayerState.PAUSED;
     }
 
     @Override
@@ -401,6 +418,9 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
 
                 @Override
                 public long getMediaPlayerCurrentOffsetInMilliseconds() {
+                    if (mediaPlayer.getDuration() == 0 && mediaPlayer.getCurrentPosition() == 0) {
+                        return mStoppedOffsetInMilliseconds;
+                    }
                     return mediaPlayer.getCurrentPosition();
                 }
 
@@ -425,6 +445,7 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
             case IDLE:
             default:
                 offset = 0;
+                break;
         }
         LogUtil.d(TAG, "getCurrentOffsetInMilliseconds offset:" + offset);
         return offset;
@@ -513,6 +534,18 @@ public class AudioPlayerDeviceModule extends BaseDeviceModule {
     private void fireBufferingEnd() {
         for (IMediaPlayer.IMediaPlayerListener listener : audioPlayerListeners) {
             listener.onBufferingEnd();
+        }
+    }
+
+    private void fireUpdateProgress(int percent) {
+        for (IMediaPlayer.IMediaPlayerListener listener : audioPlayerListeners) {
+            listener.onUpdateProgress(percent);
+        }
+    }
+
+    private void fireOnDuration(long milliseconds) {
+        for (IMediaPlayer.IMediaPlayerListener listener : audioPlayerListeners) {
+            listener.onDuration(milliseconds);
         }
     }
 

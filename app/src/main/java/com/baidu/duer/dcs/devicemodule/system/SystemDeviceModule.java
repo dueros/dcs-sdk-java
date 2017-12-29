@@ -15,6 +15,10 @@
  */
 package com.baidu.duer.dcs.devicemodule.system;
 
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+
+import com.baidu.duer.dcs.androidapp.DcsSampleApplication;
 import com.baidu.duer.dcs.devicemodule.system.message.ExceptionEncounteredPayload;
 import com.baidu.duer.dcs.devicemodule.system.message.SetEndPointPayload;
 import com.baidu.duer.dcs.devicemodule.system.message.ThrowExceptionPayload;
@@ -27,6 +31,8 @@ import com.baidu.duer.dcs.framework.message.Event;
 import com.baidu.duer.dcs.framework.message.Header;
 import com.baidu.duer.dcs.framework.message.MessageIdHeader;
 import com.baidu.duer.dcs.framework.message.Payload;
+import com.baidu.duer.dcs.http.HttpConfig;
+import com.baidu.duer.dcs.oauth.api.OauthPreferenceUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -110,6 +116,13 @@ public class SystemDeviceModule extends BaseDeviceModule {
         Payload payload = directive.getPayload();
         if (payload instanceof ThrowExceptionPayload) {
             ThrowExceptionPayload throwExceptionPayload = (ThrowExceptionPayload) payload;
+            if (throwExceptionPayload.getCode() == ThrowExceptionPayload.Code.UNAUTHORIZED_REQUEST_EXCEPTION) {
+                //  分别清空token 和 cookie
+                OauthPreferenceUtil.clearAllOauth(DcsSampleApplication.getInstance());
+                HttpConfig.setAccessToken("");
+                CookieSyncManager.createInstance(DcsSampleApplication.getInstance());
+                CookieManager.getInstance().removeAllCookie();
+            }
             fireThrowException(throwExceptionPayload);
         }
     }

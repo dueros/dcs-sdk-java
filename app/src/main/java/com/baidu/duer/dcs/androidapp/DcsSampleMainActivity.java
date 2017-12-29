@@ -15,11 +15,13 @@
  */
 package com.baidu.duer.dcs.androidapp;
 
+import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -55,7 +57,7 @@ import java.io.File;
  * <p>
  * Created by zhangyan42@baidu.com on 2017/5/18.
  */
-public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View.OnClickListener {
+public class DcsSampleMainActivity extends Activity implements View.OnClickListener {
     public static final String TAG = "DcsDemoActivity";
     private Button voiceButton;
     private TextView textViewTimeStopListen;
@@ -80,12 +82,6 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
         initView();
         initOauth();
         initFramework();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        initOauth();
     }
 
     private void initView() {
@@ -157,6 +153,7 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
                         stopRecording();
                     }
 
+                    @Override
                     public void onSucceed(int statusCode) {
                         LogUtil.d(TAG, "onSucceed-statusCode:" + statusCode);
                         if (statusCode != 200) {
@@ -250,11 +247,7 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
 
     private void initOauth() {
         IOauth baiduOauth = new OauthImpl();
-        if (baiduOauth.isSessionValid()) {
-            HttpConfig.setAccessToken(baiduOauth.getAccessToken());
-        } else {
-            baiduOauth.authorize();
-        }
+        HttpConfig.setAccessToken(baiduOauth.getAccessToken());
     }
 
     private void stopRecording() {
@@ -282,9 +275,19 @@ public class DcsSampleMainActivity extends DcsSampleBaseActivity implements View
                     Toast.makeText(this,
                             getResources().getString(R.string.err_net_msg),
                             Toast.LENGTH_SHORT).show();
+                    wakeUp.startWakeUp();
                     return;
                 }
                 if (CommonUtil.isFastDoubleClick()) {
+                    return;
+                }
+                if (TextUtils.isEmpty(HttpConfig.getAccessToken())) {
+                    startActivity(new Intent(DcsSampleMainActivity.this, DcsSampleOAuthActivity.class));
+                    finish();
+                    return;
+                }
+                if (!dcsFramework.getDcsClient().isConnected()) {
+                    dcsFramework.getDcsClient().startConnect();
                     return;
                 }
                 if (isStopListenReceiving) {

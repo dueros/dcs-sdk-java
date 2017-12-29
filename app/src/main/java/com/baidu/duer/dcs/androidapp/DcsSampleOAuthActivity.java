@@ -15,6 +15,7 @@
  */
 package com.baidu.duer.dcs.androidapp;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -35,10 +36,10 @@ import com.baidu.duer.dcs.util.LogUtil;
  * <p>
  * Created by zhangyan42@baidu.com on 2017/5/18.
  */
-public class DcsSampleOAuthActivity extends DcsSampleBaseActivity implements View.OnClickListener {
+public class DcsSampleOAuthActivity extends Activity implements View.OnClickListener {
     // 需要开发者自己申请client_id
     // client_id，就是oauth的client_id
-    private static final String CLIENT_ID = "{{placeholder for your client_id}}";
+    private static final String CLIENT_ID = "d8ITlI9aeTPaGcxKKsZit8tq";
     // 是否每次授权都强制登陆
     private boolean isForceLogin = false;
     // 是否每次都确认登陆
@@ -71,7 +72,7 @@ public class DcsSampleOAuthActivity extends DcsSampleBaseActivity implements Vie
         switch (view.getId()) {
             case R.id.btn_login:
                 String clientId = editTextClientId.getText().toString();
-                if (!TextUtils.isEmpty(clientId) && !TextUtils.isEmpty(clientId)) {
+                if (!TextUtils.isEmpty(clientId)) {
                     baiduOauthImplicitGrant = new BaiduOauthImplicitGrant(clientId, DcsSampleOAuthActivity.this.getApplication());
                     baiduOauthImplicitGrant.authorize(DcsSampleOAuthActivity.this, isForceLogin, isConfirmLogin, new BaiduDialog
                             .BaiduDialogListener() {
@@ -117,7 +118,6 @@ public class DcsSampleOAuthActivity extends DcsSampleBaseActivity implements Vie
 
     private void startMainActivity() {
         Intent intent = new Intent(DcsSampleOAuthActivity.this, DcsSampleMainActivity.class);
-        intent.putExtra("baidu", baiduOauthImplicitGrant);
         startActivity(intent);
         finish();
     }

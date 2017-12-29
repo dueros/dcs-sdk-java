@@ -206,6 +206,20 @@ public interface IMediaPlayer {
          */
         void onBufferingEnd();
 
+        /**
+         * 当前音频文件流的总时长
+         *
+         * @param milliseconds 毫秒数
+         */
+        void onDuration(long milliseconds);
+
+
+        /**
+         * 当前播放进度
+         *
+         * @param percent 0-100
+         */
+        void onUpdateProgress(int percent);
     }
 
     /**
@@ -288,6 +302,16 @@ public interface IMediaPlayer {
 
         @Override
         public void onBufferingEnd() {
+
+        }
+
+        @Override
+        public void onDuration(long milliseconds) {
+
+        }
+
+        @Override
+        public void onUpdateProgress(int percent) {
 
         }
     }
