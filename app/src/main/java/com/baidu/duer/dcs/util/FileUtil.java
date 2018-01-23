@@ -18,9 +18,11 @@ package com.baidu.duer.dcs.util;
 import android.os.Environment;
 import android.text.TextUtils;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
@@ -113,6 +115,72 @@ public class FileUtil {
             try {
                 out.close();
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 读取指定文件的输出 (不加换行符)
+     *
+     * @param fileName
+     */
+    public static String getFileToString(String fileName) {
+        String result = null;
+
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader = new BufferedReader(new FileReader(fileName), 8192);
+            StringBuilder sb = new StringBuilder();
+            String line = null;
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line);
+            }
+            bufferedReader.close();
+            result = sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 追加文件：使用FileOutputStream，在构造FileOutputStream时，把第二个参数设为false
+     *
+     * @param fileName
+     * @param conent
+     */
+    public static void storeStrToFile(String fileName, String conent) {
+        if (fileName == null || conent == null) {
+            return;
+        }
+        File file = new File(fileName);
+        File newFileDir = new File(file.getPath().replace(file.getName(), ""));
+        if (!newFileDir.exists()) {
+            newFileDir.mkdirs();
+        }
+
+        BufferedWriter out = null;
+        try {
+            out = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(file, false)));
+            out.write(conent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (null != out) {
+                    out.close();
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

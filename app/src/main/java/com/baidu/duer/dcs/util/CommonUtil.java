@@ -21,8 +21,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import com.baidu.android.common.util.DeviceId;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -41,6 +39,7 @@ import java.util.Locale;
  */
 public class CommonUtil {
     private static final int JSON_INDENT = 4;
+    private static String deviceUniqueId = "";
 
     public static String getCurrentTime() {
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
@@ -190,6 +189,9 @@ public class CommonUtil {
      */
     public static String getDeviceUniqueID() {
         // getCUID是DeviceId.getDeviceID()+"|"+DeviceId.getIMEI();
-        return DeviceId.getCUID(SystemServiceManager.getAppContext());
+        if (TextUtils.isEmpty(deviceUniqueId)) {
+            deviceUniqueId = StandbyDeviceIdUtil.getStandbyDeviceId(SystemServiceManager.getAppContext());
+        }
+        return deviceUniqueId;
     }
 }
