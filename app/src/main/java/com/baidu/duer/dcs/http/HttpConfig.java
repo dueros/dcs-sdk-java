@@ -19,6 +19,8 @@ import android.util.Log;
 
 import com.baidu.duer.dcs.util.CommonUtil;
 import com.baidu.duer.dcs.util.DcsVersion;
+import com.baidu.duer.dcs.util.StandbyDeviceIdUtil;
+import com.baidu.duer.dcs.util.SystemServiceManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +78,7 @@ public class HttpConfig {
     public static class HttpHeaders {
         public static final String CONTENT_TYPE = "Content-Type";
         public static final String DUEROS_DEVICE_ID = "dueros-device-id";
+        public static final String DUEROS_STANDBY_DEVICE_ID = "StandbyDeviceId";
         public static final String AUTHORIZATION = "Authorization";
         public static final String CONTENT_ID = "Content-ID";
         public static final String BEARER = "Bearer ";
@@ -121,6 +124,8 @@ public class HttpConfig {
                 HttpConfig.ContentTypes.FORM_MULTIPART);
         headers.put(HttpConfig.HttpHeaders.DUEROS_DEVICE_ID,
                 CommonUtil.getDeviceUniqueID());
+        headers.put(HttpConfig.HttpHeaders.DUEROS_STANDBY_DEVICE_ID,
+                StandbyDeviceIdUtil.getStandbyDeviceId(SystemServiceManager.getAppContext()));
         headers.put(HttpConfig.HttpHeaders.DEBUG,
                 HttpConfig.HttpHeaders.DEBUG_PARAM);
         // headers.put(HttpHeaders.DEBUG_BOSS, "nj03-rp-m22nlp156.nj03.baidu.com:8486");
