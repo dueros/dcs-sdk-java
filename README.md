@@ -1,5 +1,13 @@
 # DCS SDK（Java）开发者指南
 
+## 声明
+
+本开发指南为DuerOS Android DCS SDK v1.0的版本说明。
+
+DuerOS Android DCS SDK v1.6.3.0及以后的版本将在百度DuerOS开放平台提供下载链接：
+https://dueros.baidu.com/didp/doc/dueros-conversational-service/sdk_markdown
+由于近期变化比较频繁，改动源代码会引起不可控问题，v1.6.3.0及以后的版本将暂不提供源码下载。
+
 ## DCS协议
 
 DCS协议是DuerOS服务端与设备端之间的通讯协议，是一套把DuerOS的智能语音交互能力向所有设备开放的API，了解详情请看[DCS协议文档](http://developer.dueros.baidu.com/doc/dueros-conversational-service/introduction_markdown)。
