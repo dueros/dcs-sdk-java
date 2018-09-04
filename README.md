@@ -2,10 +2,10 @@
 
 ## 声明
 
-本开发指南为DuerOS Android DCS SDK v1.0的版本说明，该工程只做为dcs协议示例使用。
+本开发指南为DuerOS Android DCS SDK v1.0的版本说明，该工程只做为dcs协议示例使用。本开源版本自2018-09-04起不再迭代维护。
+从降低开发者接入成本、减少不可控问题出现的角度出发，DuerOS未来将主推SDK集成方案。
 
-由于后续主推SDK集成方案，v1.0开源版本不再迭代维护。
-DuerOS Android DCS SDK v1.6.3.0及以后的版本将在百度DuerOS开放平台提供下载链接：
+DuerOS DCS Android SDK v1.6.3.0及以后的版本将在百度DuerOS开放平台提供下载链接：
 https://dueros.baidu.com/didp/doc/dueros-conversational-service/sdk_markdown
 
 ## DCS协议
